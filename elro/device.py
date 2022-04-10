@@ -10,30 +10,31 @@ class DeviceType(Enum):
     """
     The DeviceType defines which kind of Elro device this is
     """
-    CO_ALARM = "0000","1000","2000","0008","1008","2008","000E","100E","200E"
-    GAS_ALARM = "0002","1002","2002","1006","000A","100A","200A"
-    SMOKE_ALARM = "0001","1001","2001","0009","1009","2009"
-    WATER_ALARM = "0004","1004","2004","000C","100C","200C","0012","1012","2012"
-    HEAT_ALARM = "0003","1003","2003","000B","100B","200B","0011","1011","2011"
-    FIRE_ALARM = "0005","1109","2109","000D","100D","200D","0013","1013","2013"
 
-    GUARD = "0210","1210","2210" # access control
-    TEMPERATURE_SENSOR = "0102","1102","2102" # TH_CHECK
-    DOOR_WINDOW_SENSOR = "0101","1101","2101"   # DOOR_CHECK
+    CO_ALARM = "0000", "1000", "2000", "0008", "1008", "2008", "000E", "100E", "200E"
+    GAS_ALARM = "0002", "1002", "2002", "1006", "000A", "100A", "200A"
+    SMOKE_ALARM = "0001", "1001", "2001", "0009", "1009", "2009"
+    WATER_ALARM = "0004", "1004", "2004", "000C", "100C", "200C", "0012", "1012", "2012"
+    HEAT_ALARM = "0003", "1003", "2003", "000B", "100B", "200B", "0011", "1011", "2011"
+    FIRE_ALARM = "0005", "1109", "2109", "000D", "100D", "200D", "0013", "1013", "2013"
+
+    GUARD = "0210", "1210", "2210"  # access control
+    TEMPERATURE_SENSOR = "0102", "1102", "2102"  # TH_CHECK
+    DOOR_WINDOW_SENSOR = "0101", "1101", "2101"  # DOOR_CHECK
 
     LOCK = "1213"
     MODE_BUTTON = "0305"
-    BUTTON = "0301","1301","2301"
-    LAMP = "020A","120A","220A"
-    SOCKET = "0200","1200","2200"
-    TWO_SOCKET = "0201","1201","2201"
-    VALVE = "0208","1208","2208"
-    CURTAIN = "0209","1209","2209"
-    TEMP_CONTROL = "0215","1215","2215"
-    DIMMING_MODULE = "0214","1214","2214"
+    BUTTON = "0301", "1301", "2301"
+    LAMP = "020A", "120A", "220A"
+    SOCKET = "0200", "1200", "2200"
+    TWO_SOCKET = "0201", "1201", "2201"
+    VALVE = "0208", "1208", "2208"
+    CURTAIN = "0209", "1209", "2209"
+    TEMP_CONTROL = "0215", "1215", "2215"
+    DIMMING_MODULE = "0214", "1214", "2214"
 
-    SOS_KEY = "0300","1300","2300"
-    PIR_CHECK = "0100","1100","2100"
+    SOS_KEY = "0300", "1300", "2300"
+    PIR_CHECK = "0100", "1100", "2100"
 
     def __new__(cls, *values):
         obj = object.__new__(cls)
@@ -45,10 +46,10 @@ class DeviceType(Enum):
         return obj
 
     def __repr__(self):
-        return '<%s.%s: %s>' % (
+        return "<%s.%s: %s>" % (
             self.__class__.__name__,
             self._name_,
-            ', '.join([repr(v) for v in self._all_values]),
+            ", ".join([repr(v) for v in self._all_values]),
         )
 
 
@@ -56,6 +57,7 @@ class Device(ABC):
     """
     A Device is an Elro device that is connected to the system
     """
+
     def __init__(self, device_id, device_type_id):
         """
         Constructor
@@ -180,20 +182,25 @@ class Device(ABC):
         A json representation of the device.
         :return: A str containing json.
         """
-        return json.dumps({"name": self.name,
-                           "device_name": self.name,
-                           "id": self.id,
-                           "type": self.device_type_id,
-                           "type_name": self.device_type.name,
-                           "state": self.device_state,
-                           "battery": self.battery_level,
-                           "signal": self.signal_strength})
+        return json.dumps(
+            {
+                "name": self.name,
+                "device_name": self.name,
+                "id": self.id,
+                "type": self.device_type_id,
+                "type_name": self.device_type.name,
+                "state": self.device_state,
+                "battery": self.battery_level,
+                "signal": self.signal_strength,
+            }
+        )
 
 
 class WindowSensor(Device):
     """
     A sensor that can detect open/close state of a window.
     """
+
     def __init__(self, device_id, device_type_id):
         """
         Constructor
@@ -208,7 +215,9 @@ class WindowSensor(Device):
         :param data: The data dict received from the actual device
         """
         if DeviceType(data["data"]["device_name"]) != DeviceType.DOOR_WINDOW_SENSOR:
-            logging.error(f"Tried to update a window sensor to type '{DeviceType(data['data']['device_name'])}'")
+            logging.error(
+                f"Tried to update a window sensor to type '{DeviceType(data['data']['device_name'])}'"
+            )
 
         state = data["data"]["device_status"][4:-2]
         if state == "55":
@@ -223,6 +232,7 @@ class AlarmSensor(Device):
     """
     A device that can ring an alarm (HeatAlarm, WaterAlarm, FireAlarm, COAlarm)
     """
+
     def __init__(self, device_id, device_type_id):
         """
         Constructor
@@ -239,14 +249,18 @@ class AlarmSensor(Device):
         state = data["data"]["device_status"][4:-2]
         state_name = None
 
-        #CO, WATER and HEAT_ALARM specific status
-        if self.device_type == DeviceType.CO_ALARM or self.device_type == DeviceType.WATER_ALARM or self.device_type == DeviceType.HEAT_ALARM:
+        # CO, WATER and HEAT_ALARM specific status
+        if (
+            self.device_type == DeviceType.CO_ALARM
+            or self.device_type == DeviceType.WATER_ALARM
+            or self.device_type == DeviceType.HEAT_ALARM
+        ):
             if state == "11":
                 state_name = "Illegal demolition"
             elif state == "50":
                 state_name = "Normal"
 
-        #FIRE_ALARM specific status
+        # FIRE_ALARM specific status
         if self.device_type == DeviceType.FIRE_ALARM:
             if state == "12":
                 state_name = "Fault"
@@ -259,7 +273,7 @@ class AlarmSensor(Device):
             elif state == "1B":
                 state_name = "Silence"
 
-        #Generic status
+        # Generic status
         if state_name is None:
             if state == "BB":
                 state_name = "Test Alarm"
@@ -274,19 +288,25 @@ class AlarmSensor(Device):
                 state_name = "Unknown"
 
         self.device_state = state_name
-        logging.debug(f"AlarmSensor with id '{self.id}' has got the device_state '{self.device_state}'")
+        logging.debug(
+            f"AlarmSensor with id '{self.id}' has got the device_state '{self.device_state}'"
+        )
+
 
 class Unsupported(Device):
     """
     Device used when no other match is available.
     """
+
     def __init__(self, device_id, device_type_id):
         """
         Constructor
         :param device_id: The device ID
         :param device_type_id: The device type id
         """
-        logging.warning(f"Creating an unsupported device ({device_id}) type '{DeviceType(device_type_id)}'")
+        logging.warning(
+            f"Creating an unsupported device ({device_id}) type '{DeviceType(device_type_id)}'"
+        )
         super().__init__(device_id, device_type_id)
 
     def update_specifics(self, data):
@@ -300,13 +320,14 @@ class Unsupported(Device):
             logging.debug("Unsupported device with id " + str(self.id) + " offline!")
             self.device_state = "Offline"
 
+
 def create_device_from_data(data):
     """
     Factory method to create a device from a data dict
     :param data: The data dict received from the actual device
     :return: A Device object
     """
-    
+
     device_id = data["data"]["device_ID"]
     device_type_id = data["data"]["device_name"]
 
@@ -314,11 +335,16 @@ def create_device_from_data(data):
         logging.warning(f"Got device_name 'DEL' for device_id '{(device_id)}'")
         return None
     else:
-        devType = DeviceType(device_type_id)
-        match devType:
-            case DeviceType.DOOR_WINDOW_SENSOR:
-                return WindowSensor(device_id, device_type_id)
-            case DeviceType.CO_ALARM | DeviceType.GAS_ALARM | DeviceType.SMOKE_ALARM | DeviceType.WATER_ALARM | DeviceType.HEAT_ALARM | DeviceType.FIRE_ALARM:
-                return AlarmSensor(device_id, device_type_id)
-            case _:
-                return Unsupported(device_id, device_type_id)
+        if (devType := DeviceType(device_type_id)) == DeviceType.DOOR_WINDOW_SENSOR:
+            return WindowSensor(device_id, device_type_id)
+        elif devType in [
+            DeviceType.CO_ALARM,
+            DeviceType.GAS_ALARM,
+            DeviceType.SMOKE_ALARM,
+            DeviceType.WATER_ALARM,
+            DeviceType.HEAT_ALARM,
+            DeviceType.FIRE_ALARM,
+        ]:
+            return AlarmSensor(device_id, device_type_id)
+        else:
+            return Unsupported(device_id, device_type_id)
