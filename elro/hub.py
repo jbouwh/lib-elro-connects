@@ -8,7 +8,6 @@ import trio
 from elro.command import Command
 from elro.device import create_device_from_data
 from elro.utils import get_string_from_ascii, get_ascii, crc_maker, get_eq_crc
-from elro.validation import hostname, ip_address
 
 _LOGGER = logging.getLogger(__name__)
 
