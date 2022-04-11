@@ -4,13 +4,13 @@ import logging
 import json
 
 import trio
-from valideer import accepts
-import valideer
 
 from elro.command import Command
 from elro.device import create_device_from_data
 from elro.utils import get_string_from_ascii, get_ascii, crc_maker, get_eq_crc
 from elro.validation import hostname, ip_address
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Hub:
@@ -22,11 +22,6 @@ class Hub:
     CTRL_KEY = "0"
     BIND_KEY = "0"
 
-    @accepts(
-        ip=valideer.Pattern(f"^(mqtt://)?({ip_address})|({hostname})$"),
-        port="integer",
-        device_id=valideer.Pattern("^ST_([0-9A-Fa-f]{12})$"),
-    )
     def __init__(self, ip, port, device_id):
         """
         Constructor
@@ -59,12 +54,12 @@ class Hub:
         await self.sync_scenes(0)
         await self.get_device_names()
 
-        logging.info("Waiting until all devices are retreived")
+        _LOGGER.info("Waiting until all devices are retreived")
         await trio.sleep(5)
         if (
             len(self.devices_for_sync) > 0
         ):  # sync devices when there are devices known by name
-            logging.info(f"Devices where replied, syncing those devices")
+            _LOGGER.info("Devices where replied, syncing those devices")
             await self.sync_device_status(self.devices_for_sync)
 
         # Main loop, keep updating every 30 seconds. Keeps 'connection' alive in order
@@ -122,7 +117,7 @@ class Hub:
         Sends data to the K1
         :param data: The data to be send
         """
-        logging.info(f"Send data: {data}")
+        _LOGGER.info("Send data: %s", data)
         await self.sock.sendto(bytes(data, "utf-8"), (self.ip, self.port))
 
     async def receive_data(self):
@@ -134,15 +129,15 @@ class Hub:
             try:
                 data = await self.sock.recv(4096)
                 break
-            except Exception as Error:
+            except Exception as error:
                 i = i + 1
                 if i < 3:
-                    logging.warning(
-                        f"Unable to connect to k1, retrying again. Error: {Error}"
+                    _LOGGER.warning(
+                        "Unable to connect to k1, retrying again. Error: %s", error
                     )
                     await trio.sleep(1)
                 else:
-                    logging.error(f"Unable to connect to k1 with error: {Error}")
+                    _LOGGER.error("Unable to connect to k1 with error: %s", error)
                     exit()
 
         reply = str(data)[2:-1]
@@ -151,16 +146,16 @@ class Hub:
         if reply.endswith("\\r"):
             reply = reply[:-2]
 
-        logging.info("Received data: " + reply)
+        _LOGGER.info("Received data: %s", reply)
 
         if f"NAME:{self.id}" in reply:
             for item in reply.split("\\n"):
-                if f"KEY" in item:
+                if "KEY" in item:
                     Hub.CTRL_KEY = item.split(":")[1]
-                    logging.info(f"Got ctrlKey '{Hub.CTRL_KEY}'")
-                if f"BIND" in item:
+                    _LOGGER.info("Got ctrlKey '%s'", Hub.CTRL_KEY)
+                if "BIND" in item:
                     Hub.BIND_KEY = item.split(":")[1]
-                    logging.info(f"Got bindKey '{Hub.BIND_KEY}'")
+                    _LOGGER.info("Got bindKey '%s'", Hub.BIND_KEY)
             self.connected = True
 
         if reply.startswith("{") and reply != "{ST_answer_OK}":
@@ -178,7 +173,7 @@ class Hub:
         :param data: The data of the device to process
         :return: The device object
         """
-        logging.info(f"Process device with data: {data}")
+        _LOGGER.info("Process device with data: %s", data)
         d_id = data["data"]["device_ID"]
         if data["data"]["device_name"] == "DEL":
             await self.remove_device(data, False)
@@ -200,9 +195,9 @@ class Hub:
         Handles all commands from the K1
         :param data: The data with the commands
         """
-        logging.info(f"Handle command: {data}")
+        _LOGGER.info("Handle command: %s", data)
         if data["data"]["cmdId"] == Command.DEVICE_STATUS_UPDATE.value:
-            logging.debug(f"Processing cmdId: {data['data']['cmdId']}")
+            _LOGGER.debug("Processing cmdId: %s", data["data"]["cmdId"])
             if data["data"]["device_name"] == "STATUES":
                 return
 
@@ -217,7 +212,7 @@ class Hub:
                 dev.update(data)
 
         elif data["data"]["cmdId"] == Command.DEVICE_ALARM_TRIGGER.value:
-            logging.debug(f"Processing cmdId: {data['data']['cmdId']}")
+            _LOGGER.debug("Processing cmdId: %s", data["data"]["cmdId"])
             d_id = int(data["data"]["answer_content"][6:10], 16)
             d_name = data["data"]["answer_content"][10:14]
             d_status = data["data"]["answer_content"][14:22]
@@ -234,8 +229,9 @@ class Hub:
             try:
                 dev = self.devices[d_id]
             except KeyError:
-                logging.warning(
-                    f"Got device id '{d_id}', but the device is not yet known. Trying to create the device"
+                _LOGGER.warning(
+                    "Got device id '%s', but the device is not yet known. Trying to create the device",
+                    d_id,
                 )
                 dev = await self.process_device(data)
                 await trio.sleep(0)
@@ -243,10 +239,10 @@ class Hub:
                     dev.update(data)
 
             dev.send_alarm_event(data)
-            logging.debug("ALARM!! Device_id " + str(d_id) + "(" + dev.name + ")")
+            _LOGGER.debug("ALARM!! Device_id %s(%s)", d_id, dev.name)
 
         elif data["data"]["cmdId"] == Command.DEVICE_NAME_REPLY.value:
-            logging.debug(f"Processing cmdId: {data['data']['cmdId']}")
+            _LOGGER.debug("Processing cmdId: %s", data["data"]["cmdId"])
             answer = data["data"]["answer_content"]
             if answer == "NAME_OVER":
                 return
@@ -258,7 +254,7 @@ class Hub:
             try:
                 dev = self.devices_for_sync[d_id]
             except KeyError:
-                logging.info(f"Unknown name from device id '{d_id}'")
+                _LOGGER.info("Unknown name from device id '%s'", d_id)
                 self.devices_for_sync[d_id] = "0464AA00"  # Bogus device status
                 return
             await trio.sleep(0)
@@ -284,7 +280,7 @@ class Hub:
             + str(group_nr)
             + ',"answer_content":"","scene_content":""}'
         )
-        logging.info(f"sync scenes, group {group_nr}")
+        _LOGGER.info("sync scenes, group %s", group_nr)
         await self.send_data(msg)
 
     async def sync_devices(self):
@@ -296,7 +292,7 @@ class Hub:
             + str(Command.GET_ALL_EQUIPMENT_STATUS.value)
             + ',"device_status":""}'
         )
-        logging.info("sync devices")
+        _LOGGER.info("sync devices")
         await self.send_data(msg)
 
     async def get_device_names(self):
@@ -322,8 +318,8 @@ class Hub:
             try:
                 dev = self.devices[device_id]
             except KeyError:
-                logging.error(
-                    f"Set device state device_id '{device_id}' is not (yet) known"
+                _LOGGER.error(
+                    "Set device state device_id '%s' is not (yet) known", device_id
                 )
                 return
 
@@ -337,7 +333,7 @@ class Hub:
             + '000000"}'
         )
         run = self.construct_message(data)
-        logging.info(f"Set device '{device_id}' state with: {run}")
+        _LOGGER.info("Set device '%s' state with: %s", device_id, run)
         await self.send_data(run)
 
     async def set_device_name(self, device_id, device_name):
@@ -349,20 +345,24 @@ class Hub:
         try:
             dev = self.devices[device_id]
         except KeyError:
-            logging.error(f"Set device name device_id '{device_id}' is not (yet) known")
+            _LOGGER.error(
+                "Set device name device_id '%s' is not (yet) known", device_id
+            )
             return
 
         try:
             data = get_ascii(device_name)
         except Exception as error:
-            logging.error(
-                f"Unable to set device_name for '{device_id}' with error: {error}"
+            _LOGGER.error(
+                "Unable to set device_name for '%s' with error: %s",
+                device_id,
+                error,
             )
             return
 
         if len(data) == 0:
-            logging.error(
-                f"Unable to set device_name for '{device_id}', there is no hex string"
+            _LOGGER.error(
+                "Unable to set device_name for '%s', there is no hex string", device_id
             )
             return
 
@@ -378,7 +378,9 @@ class Hub:
             + '"}'
         )
         run = self.construct_message(data)
-        logging.info(f"Set device '{device_id}' new name '{device_name}' with: {run}")
+        _LOGGER.info(
+            "Set device '%s' new name '%s' with: %s", device_id, device_name, run
+        )
         await self.send_data(run)
 
     async def sync_device_status(self, devices=None):
@@ -396,7 +398,7 @@ class Hub:
             + device_status
             + '"}'
         )
-        logging.info(f"sync device status with '{msg}'")
+        _LOGGER.info("sync device status with '%s'", msg)
 
         await self.send_data(msg)
 
@@ -406,7 +408,7 @@ class Hub:
         :param device_id: The id of the device that will be removed
         :param from_hub: Also send the delete command to the hub
         """
-        logging.info(f"Delete device '{device_id}'")
+        _LOGGER.info("Delete device '%s'", device_id)
         # Delete device
         try:
             dev = self.devices[device_id]
@@ -414,8 +416,10 @@ class Hub:
         except KeyError:
             pass
         except Exception as error:
-            logging.error(
-                f"Unhandeld error when deleting device  '{device_id}': {error}"
+            _LOGGER.error(
+                "Unhandeld error when deleting device '%s': %s",
+                device_id,
+                error,
             )
 
         # Delete device from devices_for_sync
@@ -425,8 +429,10 @@ class Hub:
         except KeyError:
             pass
         except Exception as error:
-            logging.error(
-                f"Unhandeld error when deleting device from the sync  '{device_id}': {error}"
+            _LOGGER.error(
+                "Unhandeld error when deleting device from the sync  '%s': %s",
+                device_id,
+                error,
             )
 
         # Delete device from devices_for_sync
@@ -436,8 +442,10 @@ class Hub:
         except KeyError:
             pass
         except Exception as error:
-            logging.error(
-                f"Unhandeld error when deleting device from unregistered names  '{device_id}': {error}"
+            _LOGGER.error(
+                "Unhandeld error when deleting device from unregistered names  '%s': %s",
+                device_id,
+                error,
             )
 
         if from_hub:
@@ -449,7 +457,7 @@ class Hub:
                 + "}"
             )
             run = self.construct_message(data)
-            logging.info(f"Delete device '{device_id}' on the hub with: {run}")
+            _LOGGER.info("Delete device '%s' on the hub with: %s", device_id, run)
             await self.send_data(run)
 
     async def permit_join_device(self):
@@ -458,7 +466,7 @@ class Hub:
         """
         data = '{"cmdId":' + str(Command.INCREACE_EQUIPMENT.value) + "}"
         run = self.construct_message(data)
-        logging.info(f"Permit join device with: {run}")
+        _LOGGER.info("Permit join device with: %s", run)
         await self.send_data(run)
 
     async def permit_join_device_disable(self):
@@ -467,7 +475,7 @@ class Hub:
         """
         data = '{"cmdId":' + str(Command.CANCEL_INCREACE_EQUIPMENT.value) + "}"
         run = self.construct_message(data)
-        logging.info(f"Disable join device with: {run}")
+        _LOGGER.info("Disable join device with: %s", run)
         await self.send_data(run)
 
     async def replace_device(self, device_id):
@@ -475,22 +483,22 @@ class Hub:
         Replace the specified device
         :param device_id: The id of the device that will be replaced
         """
-        logging.info(f"Replace device '{device_id}'")
+        _LOGGER.info("Replace device '%s'", device_id)
         # Delete device
         try:
             dev = self.devices[device_id]
             del self.devices[device_id]
         except KeyError:
-            logging.warning(
-                f"Cannot replace device. Device id '{device_id}' does not exist."
+            _LOGGER.warning(
+                "Cannot replace device. Device id '%s' does not exist.", device_id
             )
             return
         except Exception as error:
-            logging.error(
-                f"Unhandeld error when replacing device  '{device_id}': {error}"
+            _LOGGER.error(
+                "Unhandeld error when replacing device  '%s': %s", device_id, error
             )
 
         data = '{"cmdId":' + str(Command.REPLACE_EQUIPMENT.value) + "}"
         run = self.construct_message(data)
-        logging.info(f"Permit join device with: {run}")
+        _LOGGER.info("Permit join device with: %s", run)
         await self.send_data(run)
