@@ -4,9 +4,6 @@ import json
 import trio
 from distmqtt.client import open_mqttclient
 from distmqtt.mqtt.constants import QOS_1
-from valideer import accepts, Pattern
-
-from elro.validation import ip_address, hostname
 
 
 class MQTTPublisher:
@@ -14,10 +11,6 @@ class MQTTPublisher:
     A MQTTPublisher listens to all hub events and publishes messages to an MQTT broker accordingly
     """
 
-    @accepts(
-        broker_host=Pattern(f"({ip_address}|{hostname})"),
-        base_topic=Pattern("^[/_\\-a-zA-Z0-9]*$"),
-    )
     def __init__(self, broker_host, ha_autodiscover, base_topic=None):
         """
         Constructor

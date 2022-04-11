@@ -1,8 +1,6 @@
 import logging
 import collections
 
-from valideer import accepts, Pattern
-
 
 # From the ByteUtil class, needed by CRC_maker
 AUCHCRCHI = (
@@ -55,9 +53,6 @@ def get_string_from_ascii(input_string):
     return name
 
 
-@accepts(
-    input_string=Pattern("^[_\-a-zA-Z0-9 ]*$")
-)  # Not fully supporting a wide range of characters due to partial implementation
 def get_ascii(input_string: str):
     """
     This function is partially reversed engineered and translated to python
@@ -65,6 +60,8 @@ def get_ascii(input_string: str):
 
     :param input: A string
     :return: A hex string
+
+    Pattern("^[_\-a-zA-Z0-9 ]*$"
     """
     countf = 0
 

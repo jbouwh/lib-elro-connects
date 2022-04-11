@@ -38,6 +38,9 @@ class Hub:
         self.connected = False
 
         self.msg_id = 0
+
+    def init_socket(self):
+        """Initiliaze trio sockets."""
         self.sock = trio.socket.socket(trio.socket.AF_INET, trio.socket.SOCK_DGRAM)
 
         self.new_device_send_ch, self.new_device_receive_ch = trio.open_memory_channel(
