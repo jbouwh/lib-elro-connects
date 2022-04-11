@@ -13,8 +13,11 @@ class MQTTPublisher:
     """
     A MQTTPublisher listens to all hub events and publishes messages to an MQTT broker accordingly
     """
-    @accepts(broker_host=Pattern(f"({ip_address}|{hostname})"),
-             base_topic=Pattern("^[/_\\-a-zA-Z0-9]*$"))
+
+    @accepts(
+        broker_host=Pattern(f"({ip_address}|{hostname})"),
+        base_topic=Pattern("^[/_\\-a-zA-Z0-9]*$"),
+    )
     def __init__(self, broker_host, ha_autodiscover, base_topic=None):
         """
         Constructor
@@ -56,11 +59,13 @@ class MQTTPublisher:
         """
         await device.alarm.wait()
         async with open_mqttclient(uri=self.broker_host) as client:
-            logging.info(f"Publish alarm on '{self.topic_name(device)}':\n"
-                         f"{device.json.encode('utf-8')}")
-            await client.publish(f'{self.topic_name(device)}',
-                                 device.json.encode('utf-8'),
-                                 QOS_1)
+            logging.info(
+                f"Publish alarm on '{self.topic_name(device)}':\n"
+                f"{device.json.encode('utf-8')}"
+            )
+            await client.publish(
+                f"{self.topic_name(device)}", device.json.encode("utf-8"), QOS_1
+            )
 
     async def device_update_task(self, device):
         """
@@ -77,11 +82,13 @@ class MQTTPublisher:
         """
         await device.updated.wait()
         async with open_mqttclient(uri=self.broker_host) as client:
-            logging.info(f"Publish update on '{self.topic_name(device)}':\n"
-                         f"{device.json.encode('utf-8')}")
-            await client.publish(f'{self.topic_name(device)}',
-                                 device.json.encode('utf-8'),
-                                 QOS_1)
+            logging.info(
+                f"Publish update on '{self.topic_name(device)}':\n"
+                f"{device.json.encode('utf-8')}"
+            )
+            await client.publish(
+                f"{self.topic_name(device)}", device.json.encode("utf-8"), QOS_1
+            )
 
     async def device_discovery_task(self, device):
         """
@@ -99,19 +106,22 @@ class MQTTPublisher:
         # https://www.home-assistant.io/docs/mqtt/discovery/
         # https://www.home-assistant.io/integrations/sensor.mqtt/
         async with open_mqttclient(uri=self.broker_host) as client:
-            logging.info(f"Publish discovery on 'homeassistant/sensor/elro_k1/{device.id}/config'")
+            logging.info(
+                f"Publish discovery on 'homeassistant/sensor/elro_k1/{device.id}/config'"
+            )
             await client.publish(
                 f"homeassistant/sensor/elro_k1/{device.id}/config",
                 json.dumps(
-                {
-                    "name": f"elro_k1_{device.id}",
-                    "state_topic": f"{self.topic_name(device)}",
-                    "value_template": "{{ value_json.state }}",
-                    "json_attributes_topic": f"{self.topic_name(device)}",
-                    "unique_id": f"elro_k1_device_{device.id}"
-                }).encode('utf8'),
+                    {
+                        "name": f"elro_k1_{device.id}",
+                        "state_topic": f"{self.topic_name(device)}",
+                        "value_template": "{{ value_json.state }}",
+                        "json_attributes_topic": f"{self.topic_name(device)}",
+                        "unique_id": f"elro_k1_device_{device.id}",
+                    }
+                ).encode("utf8"),
                 QOS_1,
-                retain=True
+                retain=True,
             )
 
     async def device_message_task(self, hub):
@@ -128,21 +138,31 @@ class MQTTPublisher:
         :param hub: The hub to listen for devices
         """
         async with open_mqttclient(uri=self.broker_host) as client:
-            logging.info(f"Subscribing to topic 'f{self.base_topic}/elro/[device_id]/set'")
-            async with client.subscription(f"{self.base_topic}/elro/+/set", codec="utf8") as subscription:
+            logging.info(
+                f"Subscribing to topic 'f{self.base_topic}/elro/[device_id]/set'"
+            )
+            async with client.subscription(
+                f"{self.base_topic}/elro/+/set", codec="utf8"
+            ) as subscription:
                 async for msg in subscription:
-                    mqtt_message = msg.data.strip('\"')
+                    mqtt_message = msg.data.strip('"')
                     logging.info(f"Got message '{mqtt_message}' on topic '{msg.topic}'")
-                    topic_items = msg.topic.split('/')
+                    topic_items = msg.topic.split("/")
                     device_index = None
-                    for i in range(len(topic_items)):  # searching for the device index and the command
-                        if topic_items[i].lower() == 'elro':
+                    for i in range(
+                        len(topic_items)
+                    ):  # searching for the device index and the command
+                        if topic_items[i].lower() == "elro":
                             try:
-                                device_index = int(topic_items[i+1])
+                                device_index = int(topic_items[i + 1])
                             except KeyError:
-                                logging.error("Please provide the topic as [base_topic]/elro/[device_id]/set")
+                                logging.error(
+                                    "Please provide the topic as [base_topic]/elro/[device_id]/set"
+                                )
                             except ValueError:
-                                logging.error("Please provide an integer for the device_index")
+                                logging.error(
+                                    "Please provide an integer for the device_index"
+                                )
                             except Exception as error:
                                 logging.error(f"Unknown error occured '{error}'")
                             break
@@ -152,18 +172,29 @@ class MQTTPublisher:
                         try:
                             mqtt_message_json = json.loads(mqtt_message)
                         except Exception as error:
-                            logging.error(f"Unable to parse MQTT JSON '{mqtt_message}' with error: '{error}'")
+                            logging.error(
+                                f"Unable to parse MQTT JSON '{mqtt_message}' with error: '{error}'"
+                            )
                         if mqtt_message_json is not None:
                             if "name" in mqtt_message_json and device_index != 0:
-                                await hub.set_device_name(device_index, mqtt_message_json["name"])
+                                await hub.set_device_name(
+                                    device_index, mqtt_message_json["name"]
+                                )
                             elif "state" in mqtt_message_json:
-                                if mqtt_message_json["state"].lower() == 'test alarm':
-                                    await hub.set_device_state(device_index, '17')
-                                elif mqtt_message_json["state"].lower() == 'silence' and device_index == 0:
-                                    await hub.set_device_state(device_index, '00')
+                                if mqtt_message_json["state"].lower() == "test alarm":
+                                    await hub.set_device_state(device_index, "17")
+                                elif (
+                                    mqtt_message_json["state"].lower() == "silence"
+                                    and device_index == 0
+                                ):
+                                    await hub.set_device_state(device_index, "00")
                                 else:
-                                    logging.warning(f"Unable to set state with incorrect message '{mqtt_message}' and/or topic '{msg.topic}'")
-                            elif "permit_join" in mqtt_message_json and device_index == 0:
+                                    logging.warning(
+                                        f"Unable to set state with incorrect message '{mqtt_message}' and/or topic '{msg.topic}'"
+                                    )
+                            elif (
+                                "permit_join" in mqtt_message_json and device_index == 0
+                            ):
                                 if mqtt_message_json["permit_join"] is True:
                                     await hub.permit_join_device()
                                 elif mqtt_message_json["permit_join"] is False:
@@ -177,9 +208,13 @@ class MQTTPublisher:
                                 elif mqtt_message_json["replace"] is False:
                                     await hub.permit_join_device_disable()
                             else:
-                                logging.warning(f"No action belongs to the MQTT message '{mqtt_message}' and/or topic '{msg.topic}'")
+                                logging.warning(
+                                    f"No action belongs to the MQTT message '{mqtt_message}' and/or topic '{msg.topic}'"
+                                )
                     else:
-                        logging.warning(f"Received message on topic '{msg.topic}', but there was no device index")
+                        logging.warning(
+                            f"Received message on topic '{msg.topic}', but there was no device index"
+                        )
 
     async def handle_hub_events(self, hub):
         """

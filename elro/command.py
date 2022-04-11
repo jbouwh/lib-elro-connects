@@ -5,6 +5,7 @@ class Command(Enum):
     """
     ELRO Connects send commands copied from decompiled android app
     """
+
     SWITCH_TIMER = -34
     DELETE_EQUIPMENT_DETAIL = -4
     EQUIPMENT_CONTROL = 1
