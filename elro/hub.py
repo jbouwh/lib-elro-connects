@@ -1,3 +1,5 @@
+"""Support communication with the Elro K1 hub."""
+
 import logging
 import json
 
