@@ -9,10 +9,14 @@ from elro.command import Command
 
 @pytest.fixture
 def update_data():
-    data = {"data": {"cmdId": Command.DEVICE_STATUS_UPDATE.value,
-                     "device_name": DeviceType.DOOR_WINDOW_SENSOR.value,
-                     "device_ID": "vader",
-                     "device_status": "  2AAA  "}}
+    data = {
+        "data": {
+            "cmdId": Command.DEVICE_STATUS_UPDATE.value,
+            "device_name": DeviceType.DOOR_WINDOW_SENSOR.value,
+            "device_ID": "vader",
+            "device_status": "  2AAA  ",
+        }
+    }
     return data
 
 
@@ -24,55 +28,79 @@ def device(update_data):
 
 @pytest.fixture
 def alarm_device():
-    data = {"data": {"cmdId": Command.DEVICE_STATUS_UPDATE.value,
-                     "device_name": DeviceType.CO_ALARM.value,
-                     "device_ID": "vader",
-                     "device_status": "  2AAA  "}}
+    data = {
+        "data": {
+            "cmdId": Command.DEVICE_STATUS_UPDATE.value,
+            "device_name": DeviceType.CO_ALARM.value,
+            "device_ID": "vader",
+            "device_status": "  2AAA  ",
+        }
+    }
     device = create_device_from_data(data)
     return device
 
 
 def test_factory_creates_the_right_type_for_window_sensor():
-    data = {"data": {"cmdId": Command.DEVICE_STATUS_UPDATE.value,
-                     "device_name": DeviceType.DOOR_WINDOW_SENSOR.value,
-                     "device_ID": "vader",
-                     "device_status": "  2AAA  "}}
+    data = {
+        "data": {
+            "cmdId": Command.DEVICE_STATUS_UPDATE.value,
+            "device_name": DeviceType.DOOR_WINDOW_SENSOR.value,
+            "device_ID": "vader",
+            "device_status": "  2AAA  ",
+        }
+    }
     device = create_device_from_data(data)
     assert isinstance(device, WindowSensor)
 
 
 def test_factory_creates_the_right_type_for_water_sensor():
-    data = {"data": {"cmdId": Command.DEVICE_STATUS_UPDATE.value,
-                     "device_name": DeviceType.WATER_ALARM.value,
-                     "device_ID": "vader",
-                     "device_status": "  2AAA  "}}
+    data = {
+        "data": {
+            "cmdId": Command.DEVICE_STATUS_UPDATE.value,
+            "device_name": DeviceType.WATER_ALARM.value,
+            "device_ID": "vader",
+            "device_status": "  2AAA  ",
+        }
+    }
     device = create_device_from_data(data)
     assert isinstance(device, AlarmSensor)
 
 
 def test_factory_creates_the_right_type_for_co_sensor():
-    data = {"data": {"cmdId": Command.DEVICE_STATUS_UPDATE.value,
-                     "device_name": DeviceType.CO_ALARM.value,
-                     "device_ID": "vader",
-                     "device_status": "  2AAA  "}}
+    data = {
+        "data": {
+            "cmdId": Command.DEVICE_STATUS_UPDATE.value,
+            "device_name": DeviceType.CO_ALARM.value,
+            "device_ID": "vader",
+            "device_status": "  2AAA  ",
+        }
+    }
     device = create_device_from_data(data)
     assert isinstance(device, AlarmSensor)
 
 
 def test_factory_creates_the_right_type_for_heat_sensor():
-    data = {"data": {"cmdId": Command.DEVICE_STATUS_UPDATE.value,
-                     "device_name": DeviceType.HEAT_ALARM.value,
-                     "device_ID": "vader",
-                     "device_status": "  2AAA  "}}
+    data = {
+        "data": {
+            "cmdId": Command.DEVICE_STATUS_UPDATE.value,
+            "device_name": DeviceType.HEAT_ALARM.value,
+            "device_ID": "vader",
+            "device_status": "  2AAA  ",
+        }
+    }
     device = create_device_from_data(data)
     assert isinstance(device, AlarmSensor)
 
 
 def test_factory_creates_the_right_type_for_fire_sensor():
-    data = {"data": {"cmdId": Command.DEVICE_STATUS_UPDATE.value,
-                     "device_name": DeviceType.FIRE_ALARM.value,
-                     "device_ID": "vader",
-                     "device_status": "  2AAA  "}}
+    data = {
+        "data": {
+            "cmdId": Command.DEVICE_STATUS_UPDATE.value,
+            "device_name": DeviceType.FIRE_ALARM.value,
+            "device_ID": "vader",
+            "device_status": "  2AAA  ",
+        }
+    }
     device = create_device_from_data(data)
     assert isinstance(device, AlarmSensor)
 
@@ -102,27 +130,27 @@ def test_setting_battery_level_fires_updated_event(device, update_data):
 
 def test_update_window_sensor_to_open_sets_correct_state(device, update_data):
     device.device_state = "leia"
-    update_data['data']['device_status'] = '  2A55  '
+    update_data["data"]["device_status"] = "  2A55  "
     device.update_specifics(update_data)
     assert device.device_state == "Open"
 
 
 def test_update_window_sensor_to_closed_sets_correct_state(device, update_data):
     device.device_state = "leia"
-    update_data['data']['device_status'] = '  2AAA  '
+    update_data["data"]["device_status"] = "  2AAA  "
     device.update_specifics(update_data)
     assert device.device_state == "Closed"
 
 
 def test_update_alarm_sensor_to_normal_sets_correct_state(alarm_device, update_data):
-    alarm_device.device_state = 'leia'
-    update_data['data']['device_status'] = '  2AAA  '
+    alarm_device.device_state = "leia"
+    update_data["data"]["device_status"] = "  2AAA  "
     alarm_device.update_specifics(update_data)
     assert alarm_device.device_state == "Normal"
 
 
 def test_update_alarm_sensor_to_alarm_sets_correct_state(alarm_device, update_data):
-    alarm_device.device_state = 'leia'
-    update_data['data']['device_status'] = '  2ABB  '
+    alarm_device.device_state = "leia"
+    update_data["data"]["device_status"] = "  2ABB  "
     alarm_device.update_specifics(update_data)
     assert alarm_device.device_state == "Test Alarm"
