@@ -224,3 +224,18 @@ def get_eq_crc(devices):
         num = list_length_for_hex
 
     return num + status_crc
+
+
+def get_device_names(content: list) -> dict:
+    """Return device names."""
+    return {
+        int(ascii_name[0:4], 16): get_string_from_ascii(ascii_name[4:])
+        for ascii_name in content
+    }
+
+def get_default(content: list) -> dict:
+    """Return device names."""
+    return {
+        int(ascii_name[0:6], 16): None
+        for ascii_name in content
+    }

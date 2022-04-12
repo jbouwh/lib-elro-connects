@@ -1,3 +1,5 @@
+"""Elro device class models."""
+
 from enum import Enum
 from abc import ABC, abstractmethod
 import logging
