@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import sys
 from typing import TypedDict
 from elro.command import (
@@ -15,6 +16,9 @@ from elro.command import (
 from elro.utils import (
     get_default,
     get_device_names,
+    get_device_states,
+    update_state_data,
+    validate_json,
 )
 
 ATTR_BIND = "BIND"
@@ -26,6 +30,8 @@ APP_ID = 0
 TIMEOUT = 10
 UDP_PORT_NO = 1025
 
+_LOGGER = logging.getLogger(__name__)
+
 # GET_DEVICE_NAMES returns a dict[{device_id}, {device_name}]
 GET_DEVICE_NAMES = CommandAttributes(
     cmd_id=Command.GET_DEVICE_NAME,
@@ -35,6 +41,27 @@ GET_DEVICE_NAMES = CommandAttributes(
     content_sync_finished="NAME_OVER",
     content_transformer=get_device_names,
 )
+
+# GET DEVICE_STATES
+SYN_DEVICE_STATUS = CommandAttributes(
+    cmd_id=Command.SYN_DEVICE_STATUS,
+    additional_attributes={"device_status": ""},
+    receive_types=[Command.DEVICE_STATUS_UPDATE],
+    content_field="device_status",
+    content_sync_finished="OVER",
+    content_transformer=get_device_states,
+)
+
+# GET_ALL_EQUIPMENT_STATUS
+GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
+    cmd_id=Command.GET_ALL_EQUIPMENT_STATUS,
+    additional_attributes={"device_status": ""},
+    receive_types=[Command.DEVICE_STATUS_UPDATE],
+    content_field="device_status",
+    content_sync_finished="OVER",
+    content_transformer=get_device_states,
+)
+
 
 # GET_SCENES returns a dict[{scene_id}, None]
 # NOTE: If queried frequently not all data is provisioned all the time
@@ -73,7 +100,8 @@ class K1UDPHandler:
 
     def datagram_received(self, data, addr):
         """Datagram reveived."""
-        self.datagram_data.set_result((data, addr))
+        if not self.datagram_data.done():
+            self.datagram_data.set_result((data, addr))
 
     def close_connection(self):
         """Close the connection."""
@@ -167,6 +195,7 @@ class K1:
     ) -> dict | None:
         """Get device names."""
 
+        iteration = 0
         command_data = {
             "cmdId": attributes["cmd_id"].value,
         }
@@ -187,19 +216,24 @@ class K1:
                     print("TIMEOUT")
                     break
                 if raw_data := self.protocol.datagram_data.result():
-                    self.protocol.datagram_data = self.loop.create_future()
-                    print(raw_data[0].decode("utf-8").strip())
-                    data = json.loads(raw_data[0].decode("utf-8"))
-                    cmd_id = data["params"]["data"]["cmdId"]
-                    content = data["params"]["data"].get(
-                        attributes["content_field"], ""
+                    iteration += 1
+                    _LOGGER.debug(
+                        "command attributes: %s received[%s]: %s",
+                        attributes,
+                        iteration,
+                        raw_data[0].decode("utf-8").strip(),
                     )
+                    self.protocol.datagram_data = self.loop.create_future()
+                    data = validate_json(raw_data[0])
+                    params = data["params"]
+                    cmd_id = params["data"]["cmdId"]
+                    content = params["data"].get(attributes["content_field"], "")
                     if Command(cmd_id) in attributes["receive_types"]:
                         self.transport.sendto(ACK_APP.encode("utf-8"))
                         if content == attributes["content_sync_finished"]:
                             break
                         if content:
-                            contentlist.append(content)
+                            contentlist.append(params["data"])
 
                 else:
                     self.transport.sendto(ACK_APP.encode("utf-8"))
@@ -214,6 +248,7 @@ class K1:
 
     async def async_main(self) -> None:
         """Main routine to demonstratie the API PoC."""
+        logging.basicConfig(level=logging.DEBUG)
         result = await self.connect()
         if result:
             self.session = {}
@@ -221,9 +256,20 @@ class K1:
                 key, value = line.strip().split(":")
                 self.session[key] = value
 
+        print("Demo GET_SCENES")
         print(await self.async_process_command(GET_SCENES, sence_group=0))
-        print(await self.async_process_command(GET_DEVICE_NAMES))
 
+        print("Demo SYN_DEVICE_STATUS with GET_DEVICE_NAMES")
+        data = await self.async_process_command(SYN_DEVICE_STATUS)
+        names = await self.async_process_command(GET_DEVICE_NAMES)
+        update_state_data(data, names)
+        print(data)
+
+        print("Demo GET_ALL_EQUIPMENT_STATUS with GET_DEVICE_NAMES")
+        data = await self.async_process_command(GET_ALL_EQUIPMENT_STATUS)
+        names = await self.async_process_command(GET_DEVICE_NAMES)
+        update_state_data(data, names)
+        print(data)
         self.transport.close()
 
 

@@ -1,5 +1,9 @@
+"""Utilities to support Elro Connects P1 API."""
+
+import json
 import logging
 import collections
+from elro.device import DeviceType, DEVICE_STATE
 
 
 # From the ByteUtil class, needed by CRC_maker
@@ -226,16 +230,49 @@ def get_eq_crc(devices):
     return num + status_crc
 
 
+def update_state_data(data: dict[int, dict], data_update: dict[int, dict]) -> dict:
+    "Update the state."
+    for key in data_update.keys():
+        data[key].update(data_update[key])
+
+
 def get_device_names(content: list) -> dict:
     """Return device names."""
+    # answer_content
     return {
-        int(ascii_name[0:4], 16): get_string_from_ascii(ascii_name[4:])
-        for ascii_name in content
+        int(data["answer_content"][0:4], 16): {
+            "name": get_string_from_ascii(data["answer_content"][4:])
+        }
+        for data in content
     }
 
-def get_default(content: list) -> dict:
-    """Return device names."""
+
+def get_device_states(content: list) -> dict:
+    """Return device states."""
+
     return {
-        int(ascii_name[0:6], 16): None
-        for ascii_name in content
+        hexdata["device_ID"]: {
+            "device_type": DeviceType(hexdata["device_name"]).name,
+            "signal": int(hexdata["device_status"][0:2], 16),
+            "battery": int(hexdata["device_status"][2:4], 16),
+            "device_state": DEVICE_STATE[hexdata["device_status"][4:6]],
+            "device_status_data": hexdata,
+        }
+        for hexdata in content
     }
+
+
+def get_default(content: list) -> dict:
+    """Return content from ascii."""
+    return {int(data["scene_content"][0:6], 16): data for data in content}
+
+
+def validate_json(raw_data: bytes) -> dict:
+    """Process the JSON basis response, work-a-round synatx errors."""
+    json_string = raw_data.decode("utf-8")
+    try:
+        data = json.loads(json_string)
+    except json.decoder.JSONDecodeError:
+        # Try correct the malformed JSON status string missing to closing brackets
+        data = json.loads(json_string + "}}")
+    return data

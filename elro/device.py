@@ -55,6 +55,20 @@ class DeviceType(Enum):
         )
 
 
+# Represent the state of a device.
+DEVICE_STATE = {
+    "12": "FAULT",
+    "15": "SILENCE",
+    "17": "TEST ALARM",
+    "19": "FIRE ALARM",
+    "1B": "SILENCE",
+    "BB": "TEST ALARM",
+    "55": "ALARM",
+    "AA": "NORMAL",
+    "FF": "OFFLINE",
+}
+
+
 class Device(ABC):
     """
     A Device is an Elro device that is connected to the system
