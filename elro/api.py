@@ -302,6 +302,7 @@ class K1:
                 await asyncio.sleep(INTERVAL)
             except asyncio.exceptions.CancelledError as canceled_error:
                 print(f"A cancelled error occcured! {canceled_error}")
+                break
             except asyncio.exceptions.InvalidStateError as invalid_state_error:
                 print(f"An invalid state error occcured! {invalid_state_error}")
             except asyncio.exceptions.TimeoutError as timeout_error:
