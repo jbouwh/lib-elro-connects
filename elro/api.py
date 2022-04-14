@@ -28,6 +28,7 @@ ATTR_NAME = "NAME"
 APP_ID = 0
 
 TIMEOUT = 10
+INTERVAL = 5
 UDP_PORT_NO = 1025
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ GET_DEVICE_NAMES = CommandAttributes(
 SYN_DEVICE_STATUS = CommandAttributes(
     cmd_id=Command.SYN_DEVICE_STATUS,
     additional_attributes={"device_status": ""},
-    receive_types=[Command.DEVICE_STATUS_UPDATE],
+    receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
     content_field="device_status",
     content_sync_finished="OVER",
     content_transformer=get_device_states,
@@ -56,7 +57,7 @@ SYN_DEVICE_STATUS = CommandAttributes(
 GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
     cmd_id=Command.GET_ALL_EQUIPMENT_STATUS,
     additional_attributes={"device_status": ""},
-    receive_types=[Command.DEVICE_STATUS_UPDATE],
+    receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
     content_field="device_status",
     content_sync_finished="OVER",
     content_transformer=get_device_states,
@@ -155,6 +156,7 @@ class K1:
             self.loop.create_future(),
         )
         payload = (CMD_CONNECT + self.k1_id).encode("utf-8")
+        await self.lock.acquire()
         try:
             self.transport, self.protocol = await self.loop.create_datagram_endpoint(
                 lambda: K1UDPHandler(payload, on_conn_lost, datagram_data),
@@ -169,6 +171,9 @@ class K1:
             )
         except TimeoutError:
             pass
+        finally:
+            self.lock.release()
+        return None
 
     def _prepare_command(self, command_data: dict) -> bytes:
         """
@@ -248,7 +253,7 @@ class K1:
 
     async def async_main(self) -> None:
         """Main routine to demonstratie the API PoC."""
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.INFO)
         result = await self.connect()
         if result:
             self.session = {}
@@ -271,6 +276,23 @@ class K1:
         update_state_data(data, names)
         print(data)
         self.transport.close()
+        await asyncio.sleep(INTERVAL)
+        update_nr = 0
+        try:
+            while True:
+                update_nr += 1
+                print(f"Demo status update {update_nr}...")
+                await self.connect()
+                status_update = await self.async_process_command(
+                    GET_ALL_EQUIPMENT_STATUS
+                )
+                update_state_data(data, status_update)
+                print(data)
+                await asyncio.sleep(INTERVAL)
+                self.transport.close()
+        except KeyboardInterrupt:
+            print("Keyboard interrupt detected, exiting...")
+            pass
 
 
 if __name__ == "__main__":
