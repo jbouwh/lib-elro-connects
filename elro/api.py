@@ -117,7 +117,8 @@ class K1UDPHandler:
         """Connection lost."""
         self.last_exc = exc
         self.on_con_lost.set_result(True)
-        self.datagram_data.done = True
+        if not self.datagram_data.done():
+            self.datagram_data.set_result((None, None))
 
 
 class K1:
@@ -148,7 +149,7 @@ class K1:
         self.loop = None
         self.lock = asyncio.Lock()
 
-    async def connect(self) -> str:
+    async def async_connect(self) -> str:
         """Connect to the K1 hub."""
         self.loop = asyncio.get_running_loop()
         on_conn_lost, datagram_data = (
@@ -174,6 +175,15 @@ class K1:
         finally:
             self.lock.release()
         return None
+
+    async def async_disconnect(self) -> str:
+        """Disconnect from the K1 hub."""
+        await self.lock.acquire()
+        try:
+            if not self.protocol.on_con_lost.done():
+                self.transport.close()
+        finally:
+            self.lock.release()
 
     def _prepare_command(self, command_data: dict) -> bytes:
         """
@@ -251,10 +261,10 @@ class K1:
             else None
         )
 
-    async def async_main(self) -> None:
-        """Main routine to demonstratie the API PoC."""
+    async def async_demo(self) -> None:
+        """Main routine to demonstrate the API code."""
         logging.basicConfig(level=logging.INFO)
-        result = await self.connect()
+        result = await self.async_connect()
         if result:
             self.session = {}
             for line in result.rstrip().split("\n"):
@@ -275,26 +285,32 @@ class K1:
         names = await self.async_process_command(GET_DEVICE_NAMES)
         update_state_data(data, names)
         print(data)
-        self.transport.close()
+        await self.async_disconnect()
         await asyncio.sleep(INTERVAL)
         update_nr = 0
-        try:
-            while True:
+        while True:
+            try:
                 update_nr += 1
                 print(f"Demo status update {update_nr}...")
-                await self.connect()
+                # Start a new session
+                await self.async_connect()
                 status_update = await self.async_process_command(
                     GET_ALL_EQUIPMENT_STATUS
                 )
                 update_state_data(data, status_update)
                 print(data)
                 await asyncio.sleep(INTERVAL)
-                self.transport.close()
-        except KeyboardInterrupt:
-            print("Keyboard interrupt detected, exiting...")
-            pass
+            except asyncio.exceptions.CancelledError as canceled_error:
+                print(f"A cancelled error occcured! {canceled_error}")
+            except asyncio.exceptions.InvalidStateError as invalid_state_error:
+                print(f"An invalid state error occcured! {invalid_state_error}")
+            except asyncio.exceptions.TimeoutError as timeout_error:
+                print(f"A timeout error occcured! {timeout_error}")
+            finally:
+                # Close the connection if needed
+                await self.async_disconnect()
 
 
 if __name__ == "__main__":
     k1_hub = K1(sys.argv[1], sys.argv[2])
-    asyncio.run(k1_hub.async_main())
+    asyncio.run(k1_hub.async_demo())

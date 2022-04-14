@@ -255,7 +255,7 @@ def get_device_states(content: list) -> dict:
             "device_type": DeviceType(hexdata["device_name"]).name,
             "signal": int(hexdata["device_status"][0:2], 16),
             "battery": int(hexdata["device_status"][2:4], 16),
-            "device_state": DEVICE_STATE[hexdata["device_status"][4:6]],
+            "device_state": DEVICE_STATE.get(hexdata["device_status"][4:6], "n/a"),
             "device_status_data": hexdata,
         }
         for hexdata in content

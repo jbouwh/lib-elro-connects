@@ -65,6 +65,7 @@ DEVICE_STATE = {
     "BB": "TEST ALARM",
     "55": "ALARM",
     "AA": "NORMAL",
+    "FE": "UNKNOWN",
     "FF": "OFFLINE",
 }
 
