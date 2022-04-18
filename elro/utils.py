@@ -268,7 +268,9 @@ def get_default(content: list) -> dict:
 
 
 def validate_json(raw_data: bytes) -> dict:
-    """Process the JSON basis response, work-a-round synatx errors."""
+    """Process the JSON basis response, work-a-round syntax errors."""
+    if raw_data is None:
+        return {}
     json_string = raw_data.decode("utf-8")
     try:
         data = json.loads(json_string)

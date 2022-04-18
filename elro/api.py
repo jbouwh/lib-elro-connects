@@ -43,7 +43,7 @@ GET_DEVICE_NAMES = CommandAttributes(
     content_transformer=get_device_names,
 )
 
-# GET DEVICE_STATES
+# SYN DEVICE_STATUS
 SYN_DEVICE_STATUS = CommandAttributes(
     cmd_id=Command.SYN_DEVICE_STATUS,
     additional_attributes={"device_status": ""},
@@ -63,6 +63,24 @@ GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
     content_transformer=get_device_states,
 )
 
+# TEST_ALARM
+TEST_ALARM = CommandAttributes(
+    cmd_id=Command.EQUIPMENT_CONTROL,
+    additional_attributes={"device_ID": 0, "device_status": "17000000"},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
+
+SILENCE_ALARM = CommandAttributes(
+    cmd_id=Command.EQUIPMENT_CONTROL,
+    additional_attributes={"device_ID": 0, "device_status": "00000000"},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
 
 # GET_SCENES returns a dict[{scene_id}, None]
 # NOTE: If queried frequently not all data is provisioned all the time
@@ -234,9 +252,11 @@ class K1:
                     iteration += 1
                     _LOGGER.debug(
                         "command attributes: %s received[%s]: %s",
-                        attributes,
+                        command_data,
                         iteration,
-                        raw_data[0].decode("utf-8").strip(),
+                        raw_data[0].decode("utf-8").strip()
+                        if raw_data[0] is not None
+                        else None,
                     )
                     self.protocol.datagram_data = self.loop.create_future()
                     data = validate_json(raw_data[0])
@@ -263,7 +283,7 @@ class K1:
 
     async def async_demo(self) -> None:
         """Main routine to demonstrate the API code."""
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.DEBUG)
         result = await self.async_connect()
         if result:
             self.session = {}
@@ -272,13 +292,13 @@ class K1:
                 self.session[key] = value
 
         print("Demo GET_SCENES")
-        print(await self.async_process_command(GET_SCENES, sence_group=0))
+        # print(await self.async_process_command(GET_SCENES, sence_group=0))
 
         print("Demo SYN_DEVICE_STATUS with GET_DEVICE_NAMES")
-        data = await self.async_process_command(SYN_DEVICE_STATUS)
-        names = await self.async_process_command(GET_DEVICE_NAMES)
-        update_state_data(data, names)
-        print(data)
+        # data = await self.async_process_command(SYN_DEVICE_STATUS)
+        # names = await self.async_process_command(GET_DEVICE_NAMES)
+        # update_state_data(data, names)
+        # print(data)
 
         print("Demo GET_ALL_EQUIPMENT_STATUS with GET_DEVICE_NAMES")
         data = await self.async_process_command(GET_ALL_EQUIPMENT_STATUS)
@@ -288,7 +308,7 @@ class K1:
         await self.async_disconnect()
         await asyncio.sleep(INTERVAL)
         update_nr = 0
-        while True:
+        while update_nr < 0:
             try:
                 update_nr += 1
                 print(f"Demo status update {update_nr}...")
@@ -310,6 +330,19 @@ class K1:
             finally:
                 # Close the connection if needed
                 await self.async_disconnect()
+        # Test alarm (assuming there are 3 fire alarms)
+        # Be aware they cannot be fired alle together, silence an alarm befor testing the next alarm.
+        await self.async_connect()
+        await self.async_process_command(TEST_ALARM, device_ID=1)
+        await asyncio.sleep(4)
+        await self.async_process_command(SILENCE_ALARM, device_ID=1)
+        await self.async_process_command(TEST_ALARM, device_ID=2)
+        await asyncio.sleep(4)
+        await self.async_process_command(SILENCE_ALARM, device_ID=2)
+        await self.async_process_command(TEST_ALARM, device_ID=3)
+        await asyncio.sleep(4)
+        await self.async_process_command(SILENCE_ALARM, device_ID=3)
+        await self.async_disconnect()
 
 
 if __name__ == "__main__":
