@@ -70,6 +70,9 @@ class K1UDPHandler(asyncio.BaseProtocol):
 class K1:
     """API class to Elro connects K1 adapter."""
 
+    _lock = asyncio.Lock()
+    _loop: asyncio.AbstractEventLoop | None = None
+
     class K1ConnectionError(Exception):
         """K1 exception class."""
 
@@ -86,16 +89,22 @@ class K1:
         """Initialize the module."""
         self._transport = None
         self._protocol = None
-        self._ipaddress = ipaddress
+        self._remoteaddress = (ipaddress, port)
         self._k1_id = k1_id
-        self._port = port
         self._session: dict[str, str] = {}
         self._msg_id = 0
-        self._loop: asyncio.AbstractEventLoop | None = None
-        self._lock = asyncio.Lock()
 
     async def async_connect(self) -> None:
         """Connect to the K1 hub."""
+
+        def _store_session(self, data: str) -> None:
+            """Stores the session details."""
+            if data:
+                self._session = {}
+                for line in data.rstrip().split("\n"):
+                    key, value = line.strip().split(":")
+                    self._session[key] = value
+
         self._loop = asyncio.get_running_loop()
         if not self._loop:
             return
@@ -108,15 +117,15 @@ class K1:
         try:
             self._transport, self._protocol = await self._loop.create_datagram_endpoint(  # type: ignore
                 lambda: K1UDPHandler(payload, on_conn_lost, datagram_data),
-                remote_addr=(self._ipaddress, self._port),
+                remote_addr=self._remoteaddress,
             )
             await asyncio.wait_for(datagram_data, 15.0)
             if data := datagram_data.result():
-                self._store_session(data[0].decode("utf-8"))
+                _store_session(self, data[0].decode("utf-8"))
                 return
             raise K1.K1ConnectionError(
                 "Not received the expected result, cannot connect to "
-                f"hub {self._ipaddress} with id {self._k1_id}."
+                f"hub {self._remoteaddress[0]} with id {self._k1_id}."
             )
         except TimeoutError:
             pass
@@ -136,14 +145,6 @@ class K1:
                 self._session = {}
         finally:
             self._lock.release()
-
-    def _store_session(self, data: str) -> None:
-        """Stores the session details."""
-        if data:
-            self._session = {}
-            for line in data.rstrip().split("\n"):
-                key, value = line.strip().split(":")
-                self._session[key] = value
 
     def _prepare_command(self, command_data: dict) -> bytes:
         """
