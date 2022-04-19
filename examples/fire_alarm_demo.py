@@ -1,18 +1,15 @@
-"""Example code to demenstrate the elro connects PI API with a firealarms."""
+"""Example code to demonstrate the elro connects PI API with a firealarms."""
 
 import asyncio
 import logging
 import sys
 
-from elro.api import (
-    K1,
-)
+from elro.api import K1
 from elro.command import (
     GET_SCENES,
     SYN_DEVICE_STATUS,
     GET_DEVICE_NAMES,
     GET_ALL_EQUIPMENT_STATUS,
-    GET_DEVICE_NAMES,
     TEST_ALARM,
     SILENCE_ALARM,
 )
