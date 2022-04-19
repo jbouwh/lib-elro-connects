@@ -4,7 +4,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import TypedDict, Callable
 
-from elro.device import Device
+from elro.device import DeviceType
 
 COUNT = "count"
 ACK = "ack"
@@ -69,7 +69,7 @@ class CommandAttributes(TypedDict):
 
     cmd_id: Command
     additional_attributes: dict
-    receive_types: list[Device]
+    receive_types: list[Command]
     content_field: str
-    content_sync_finished: str
+    content_sync_finished: int | str | None
     content_transformer: Callable | None

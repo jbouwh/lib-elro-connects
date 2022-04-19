@@ -1,8 +1,12 @@
 """Utilities to support Elro Connects P1 API."""
 
+from __future__ import annotations
+
 import json
 import logging
 import collections
+from typing import Any
+
 from elro.device import DeviceType, DEVICE_STATE
 
 
@@ -72,11 +76,11 @@ def get_ascii(input_string: str):
     countf = 15 - len(input_string.encode("GBK"))
 
     if countf < 0:
-        logging.error(f"Input is to long '{input_string}'")
+        logging.error("Input is to long '%s'", input_string)
         return
 
     str_whitespace = ""
-    for i in range(countf):
+    for _ in range(countf):
         str_whitespace += "@"
 
     new_name = str_whitespace + input_string + "$"
@@ -230,8 +234,13 @@ def get_eq_crc(devices):
     return num + status_crc
 
 
-def update_state_data(data: dict[int, dict], data_update: dict[int, dict]) -> dict:
+def update_state_data(
+    data: dict[int, dict[str, Any]] | None,
+    data_update: dict[int, dict[str, Any]] | None,
+) -> None:
     "Update the state."
+    if data_update is None or data is None:
+        return
     for key in data_update.keys():
         data[key].update(data_update[key])
 
@@ -268,9 +277,7 @@ def get_default(content: list) -> dict:
 
 
 def validate_json(raw_data: bytes) -> dict:
-    """Process the JSON basis response, work-a-round syntax errors."""
-    if raw_data is None:
-        return {}
+    """Process the JSON basis response, work-a-round synatx errors."""
     json_string = raw_data.decode("utf-8")
     try:
         data = json.loads(json_string)
