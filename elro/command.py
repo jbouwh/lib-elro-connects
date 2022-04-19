@@ -4,7 +4,11 @@ from __future__ import annotations
 from enum import Enum
 from typing import TypedDict, Callable
 
-from elro.device import DeviceType
+from elro.utils import (
+    get_default,
+    get_device_names,
+    get_device_states,
+)
 
 COUNT = "count"
 ACK = "ack"
@@ -73,3 +77,72 @@ class CommandAttributes(TypedDict):
     content_field: str
     content_sync_finished: int | str | None
     content_transformer: Callable | None
+
+
+# GET_DEVICE_NAMES returns a dict[{device_id}, {device_name}]
+GET_DEVICE_NAMES = CommandAttributes(
+    cmd_id=Command.GET_DEVICE_NAME,
+    additional_attributes={"device_ID": 0},
+    receive_types=[Command.DEVICE_NAME_REPLY],
+    content_field="answer_content",
+    content_sync_finished="NAME_OVER",
+    content_transformer=get_device_names,
+)
+
+# SYN DEVICE_STATUS
+SYN_DEVICE_STATUS = CommandAttributes(
+    cmd_id=Command.SYN_DEVICE_STATUS,
+    additional_attributes={"device_status": ""},
+    receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
+    content_field="device_status",
+    content_sync_finished="OVER",
+    content_transformer=get_device_states,
+)
+
+# GET_ALL_EQUIPMENT_STATUS
+GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
+    cmd_id=Command.GET_ALL_EQUIPMENT_STATUS,
+    additional_attributes={"device_status": ""},
+    receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
+    content_field="device_status",
+    content_sync_finished="OVER",
+    content_transformer=get_device_states,
+)
+
+# TEST_ALARM
+TEST_ALARM = CommandAttributes(
+    cmd_id=Command.EQUIPMENT_CONTROL,
+    additional_attributes={"device_ID": 0, "device_status": "17000000"},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
+
+SILENCE_ALARM = CommandAttributes(
+    cmd_id=Command.EQUIPMENT_CONTROL,
+    additional_attributes={"device_ID": 0, "device_status": "00000000"},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
+
+# GET_SCENES returns a dict[{scene_id}, None]
+# NOTE: If queried frequently not all data is provisioned all the time
+GET_SCENES = CommandAttributes(
+    cmd_id=Command.SYN_SCENE,
+    additional_attributes={
+        "sence_group": 0,
+        "answer_content": "",
+        "scene_content": "",
+    },
+    receive_types=[
+        Command.SENCE_GROUP_DETAIL,
+        Command.SCENE_TYPE,
+        Command.SENCE_GROUP,
+    ],
+    content_field="scene_content",
+    content_sync_finished="OVER",
+    content_transformer=get_default,
+)

@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import sys
 from typing import Mapping, cast, Any, TypedDict
 
 from elro.command import (
@@ -15,10 +14,6 @@ from elro.command import (
     CMD_CONNECT,
 )
 from elro.utils import (
-    get_default,
-    get_device_names,
-    get_device_states,
-    update_state_data,
     validate_json,
 )
 
@@ -33,74 +28,6 @@ INTERVAL = 5
 UDP_PORT_NO = 1025
 
 _LOGGER = logging.getLogger(__name__)
-
-# GET_DEVICE_NAMES returns a dict[{device_id}, {device_name}]
-GET_DEVICE_NAMES = CommandAttributes(
-    cmd_id=Command.GET_DEVICE_NAME,
-    additional_attributes={"device_ID": 0},
-    receive_types=[Command.DEVICE_NAME_REPLY],
-    content_field="answer_content",
-    content_sync_finished="NAME_OVER",
-    content_transformer=get_device_names,
-)
-
-# SYN DEVICE_STATUS
-SYN_DEVICE_STATUS = CommandAttributes(
-    cmd_id=Command.SYN_DEVICE_STATUS,
-    additional_attributes={"device_status": ""},
-    receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
-    content_field="device_status",
-    content_sync_finished="OVER",
-    content_transformer=get_device_states,
-)
-
-# GET_ALL_EQUIPMENT_STATUS
-GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
-    cmd_id=Command.GET_ALL_EQUIPMENT_STATUS,
-    additional_attributes={"device_status": ""},
-    receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
-    content_field="device_status",
-    content_sync_finished="OVER",
-    content_transformer=get_device_states,
-)
-
-# TEST_ALARM
-TEST_ALARM = CommandAttributes(
-    cmd_id=Command.EQUIPMENT_CONTROL,
-    additional_attributes={"device_ID": 0, "device_status": "17000000"},
-    receive_types=[Command.ANSWER_YES_OR_NO],
-    content_field="answer_yes_or_no",
-    content_sync_finished=2,
-    content_transformer=None,
-)
-
-SILENCE_ALARM = CommandAttributes(
-    cmd_id=Command.EQUIPMENT_CONTROL,
-    additional_attributes={"device_ID": 0, "device_status": "00000000"},
-    receive_types=[Command.ANSWER_YES_OR_NO],
-    content_field="answer_yes_or_no",
-    content_sync_finished=2,
-    content_transformer=None,
-)
-
-# GET_SCENES returns a dict[{scene_id}, None]
-# NOTE: If queried frequently not all data is provisioned all the time
-GET_SCENES = CommandAttributes(
-    cmd_id=Command.SYN_SCENE,
-    additional_attributes={
-        "sence_group": 0,
-        "answer_content": "",
-        "scene_content": "",
-    },
-    receive_types=[
-        Command.SENCE_GROUP_DETAIL,
-        Command.SCENE_TYPE,
-        Command.SENCE_GROUP,
-    ],
-    content_field="scene_content",
-    content_sync_finished="OVER",
-    content_transformer=get_default,
-)
 
 
 class K1UDPHandler(asyncio.BaseProtocol):
@@ -299,70 +226,3 @@ class K1:
             if attributes["content_transformer"] is not None
             else None
         )
-
-    async def async_demo(self) -> None:
-        """Main routine to demonstrate the API code."""
-        logging.basicConfig(level=logging.INFO)
-        await self.async_connect()
-
-        print("Demo GET_SCENES")
-        print(await self.async_process_command(GET_SCENES, sence_group=0))
-
-        print("Demo SYN_DEVICE_STATUS with GET_DEVICE_NAMES")
-        data = await self.async_process_command(SYN_DEVICE_STATUS)
-        names = await self.async_process_command(GET_DEVICE_NAMES)
-        update_state_data(data, names)
-        print(data)
-
-        print("Demo GET_ALL_EQUIPMENT_STATUS with GET_DEVICE_NAMES")
-        data = await self.async_process_command(GET_ALL_EQUIPMENT_STATUS)
-        names = await self.async_process_command(GET_DEVICE_NAMES)
-        update_state_data(data, names)
-        print(data)
-        await self.async_disconnect()
-        await asyncio.sleep(INTERVAL)
-        update_nr = 0
-        while update_nr < 2:
-            try:
-                update_nr += 1
-                print(f"Demo status update {update_nr}...")
-                # Start a new session
-                await self.async_connect()
-                status_update = await self.async_process_command(
-                    GET_ALL_EQUIPMENT_STATUS
-                )
-                update_state_data(data, status_update)
-                print(data)
-                await asyncio.sleep(INTERVAL)
-            except asyncio.exceptions.CancelledError as canceled_error:
-                print(f"A cancelled error occcured! {canceled_error}")
-                break
-            except asyncio.exceptions.InvalidStateError as invalid_state_error:
-                print(f"An invalid state error occcured! {invalid_state_error}")
-            except asyncio.exceptions.TimeoutError as timeout_error:
-                print(f"A timeout error occcured! {timeout_error}")
-            finally:
-                # Close the connection if needed
-                await self.async_disconnect()
-        # Test alarm (assuming there are 3 fire alarms)
-        # Be aware they cannot be fired alle together, silence an alarm befor testing the next alarm.
-        await self.async_connect()
-        print("Test alarm 1")
-        await self.async_process_command(TEST_ALARM, device_ID=1)
-        await asyncio.sleep(4)
-        print("Test alarm 2")
-        await self.async_process_command(SILENCE_ALARM, device_ID=1)
-        await self.async_process_command(TEST_ALARM, device_ID=2)
-        await asyncio.sleep(4)
-        print("Test alarm 3")
-        await self.async_process_command(SILENCE_ALARM, device_ID=2)
-        await self.async_process_command(TEST_ALARM, device_ID=3)
-        await asyncio.sleep(4)
-        await self.async_process_command(SILENCE_ALARM, device_ID=3)
-        await self.async_disconnect()
-        print("Demo completed")
-
-
-if __name__ == "__main__":
-    k1_hub = K1(sys.argv[1], sys.argv[2])
-    asyncio.run(k1_hub.async_demo())
