@@ -61,23 +61,24 @@ def get_string_from_ascii(input_string):
     return name
 
 
-def get_ascii(input_string: str):
-    """
-    This function is partially reversed engineered and translated to python
-    based on the CoderUtils class in the ELRO Android app
+def get_ascii(input_string: str) -> str | None:
+    """Encode a string to hex for API use."""
+    #
+    # This function is partially reversed engineered and translated to python
+    # based on the CoderUtils class in the ELRO Android app
 
-    :param input: A string
-    :return: A hex string
+    # :param input: A string
+    # :return: A hex string
 
-    Pattern("^[_\-a-zA-Z0-9 ]*$"
-    """
+    # Pattern("^[_\-a-zA-Z0-9 ]*$"
+
     countf = 0
 
     countf = 15 - len(input_string.encode("GBK"))
 
     if countf < 0:
         logging.error("Input is to long '%s'", input_string)
-        return
+        return None
 
     str_whitespace = ""
     for _ in range(countf):
@@ -85,7 +86,8 @@ def get_ascii(input_string: str):
 
     new_name = str_whitespace + input_string + "$"
 
-    # This is the original code and thus where the python code differs. Because this is not used, GBK encoding is probably not fully supported
+    # This is the original code and thus where the python code differs.
+    # Because this is not used, GBK encoding is probably not fully supported
 
     # byte[] nameBt = new byte[16];
     # try {
@@ -178,7 +180,7 @@ def crc_maker_char(msg):
     msg_length = int(len(msg) / 2)
     content = []
 
-    for i in range(msg_length):
+    for _ in range(msg_length):
         val = chr(int((msg[0:2]), 16))
         content.append(val)
         msg = msg[2:]
@@ -218,7 +220,7 @@ def get_eq_crc(devices):
 
     status_crc = ""
     for i in range(list_length + 1):
-        if (i + 1) in sorted_devices:
+        if i + 1 in sorted_devices:
             status_crc += crc_maker_char(sorted_devices[i + 1])
         elif i < (list_length):
             status_crc += "0000"
