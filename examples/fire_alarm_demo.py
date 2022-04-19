@@ -85,5 +85,6 @@ class AlarmDemo(K1):
 
 
 if __name__ == "__main__":
+    # argv: 1 = IP_ADDRESS, 2 = API_KEY
     k1_hub = AlarmDemo(sys.argv[1], sys.argv[2])
     asyncio.run(k1_hub.async_demo())

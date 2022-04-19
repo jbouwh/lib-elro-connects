@@ -11,7 +11,6 @@ from elro.utils import (
 )
 
 COUNT = "count"
-ACK = "ack"
 ACK_APP = "APP_answer_OK"
 
 SCENE_SYNC_FINISHED = "OVER"
