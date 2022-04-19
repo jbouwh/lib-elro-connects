@@ -44,7 +44,7 @@ class AlarmDemo(K1):
         await asyncio.sleep(INTERVAL)
 
         # Update name of device 1
-        current_name = data[1]["name"]
+        current_name = data[1]["name"] if data else ""
         print(f"Set name demo device 1. Current name is '{current_name}'")
         new_name = "Changed name"
         await self.async_process_command(
@@ -52,7 +52,7 @@ class AlarmDemo(K1):
         )
         names = await self.async_process_command(GET_DEVICE_NAMES)
         update_state_data(data, names)
-        updated_name = data[1]["name"]
+        updated_name = data[1]["name"] if data else ""
         print(f"Set name demo device 1. New name is now '{updated_name}'!")
         await asyncio.sleep(INTERVAL)
         print("Restore old name")
@@ -61,7 +61,7 @@ class AlarmDemo(K1):
         )
         names = await self.async_process_command(GET_DEVICE_NAMES)
         update_state_data(data, names)
-        updated_name = data[1]["name"]
+        updated_name = data[1]["name"] if data else ""
         print(f"Set name demo device 1. Name is again '{updated_name}'!")
         await self.async_disconnect()
         await asyncio.sleep(INTERVAL)
