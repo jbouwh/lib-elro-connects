@@ -14,7 +14,7 @@ from elro.command import (
     TEST_ALARM,
     SILENCE_ALARM,
 )
-from elro.utils import crc_maker, get_ascii, update_state_data
+from elro.utils import update_state_data
 
 INTERVAL = 5
 
