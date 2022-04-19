@@ -172,10 +172,12 @@ class K1:
         **argv: int | str,
     ) -> dict[int, dict[str, Any]] | None:
         """Get device names."""
+        iteration = 0
         if not self._protocol or not self._transport or not self._loop:
             raise K1.K1ConnectionError("Not connected to a K1 hub.")
 
-        iteration = 0
+        if attributes["attribute_transformer"]:
+            attributes["attribute_transformer"](argv)
         command_data = {
             "cmdId": attributes["cmd_id"].value,
         }

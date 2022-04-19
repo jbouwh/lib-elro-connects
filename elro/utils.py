@@ -258,6 +258,16 @@ def get_device_names(content: list) -> dict:
     }
 
 
+def set_device_name(argv: dict) -> None:
+    """Convert the device_name attribute to a hex representation including crc."""
+    if device_name := argv.get("device_name"):
+        device_name_hex = get_ascii(device_name)
+        crc = crc_maker(device_name)
+        argv["device_name"] = f"{device_name_hex}{crc}"
+    else:
+        raise ValueError("Value for device_name is not set!")
+
+
 def get_device_states(content: list) -> dict:
     """Return device states."""
 

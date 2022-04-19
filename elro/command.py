@@ -7,6 +7,7 @@ from typing import TypedDict, Callable
 from elro.utils import (
     get_default,
     get_device_names,
+    set_device_name,
     get_device_states,
 )
 
@@ -68,10 +69,11 @@ class Command(Enum):
 
 
 class CommandAttributes(TypedDict):
-    """Base class for building command attributes for async_process_command."""
+    """Base class for building command attributes for elro.api.async_process_command."""
 
     cmd_id: Command
     additional_attributes: dict
+    attribute_transformer: Callable | None
     receive_types: list[Command]
     content_field: str
     content_sync_finished: int | str | None
@@ -81,6 +83,7 @@ class CommandAttributes(TypedDict):
 # GET_DEVICE_NAMES returns a dict[{device_id}, {device_name}]
 GET_DEVICE_NAMES = CommandAttributes(
     cmd_id=Command.GET_DEVICE_NAME,
+    attribute_transformer=None,
     additional_attributes={"device_ID": 0},
     receive_types=[Command.DEVICE_NAME_REPLY],
     content_field="answer_content",
@@ -88,9 +91,21 @@ GET_DEVICE_NAMES = CommandAttributes(
     content_transformer=get_device_names,
 )
 
+# SET_DEVICE_NAMES returns a dict[{device_id}, {device_name}]
+SET_DEVICE_NAME = CommandAttributes(
+    cmd_id=Command.MODIFY_EQUIPMENT_NAME,
+    attribute_transformer=set_device_name,
+    additional_attributes={"device_ID": 0, "device_name": ""},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
+
 # SYN DEVICE_STATUS
 SYN_DEVICE_STATUS = CommandAttributes(
     cmd_id=Command.SYN_DEVICE_STATUS,
+    attribute_transformer=None,
     additional_attributes={"device_status": ""},
     receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
     content_field="device_status",
@@ -101,6 +116,7 @@ SYN_DEVICE_STATUS = CommandAttributes(
 # GET_ALL_EQUIPMENT_STATUS
 GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
     cmd_id=Command.GET_ALL_EQUIPMENT_STATUS,
+    attribute_transformer=None,
     additional_attributes={"device_status": ""},
     receive_types=[Command.DEVICE_STATUS_UPDATE, Command.DEVICE_ALARM_TRIGGER],
     content_field="device_status",
@@ -111,6 +127,7 @@ GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
 # TEST_ALARM
 TEST_ALARM = CommandAttributes(
     cmd_id=Command.EQUIPMENT_CONTROL,
+    attribute_transformer=None,
     additional_attributes={"device_ID": 0, "device_status": "17000000"},
     receive_types=[Command.ANSWER_YES_OR_NO],
     content_field="answer_yes_or_no",
@@ -120,6 +137,7 @@ TEST_ALARM = CommandAttributes(
 
 SILENCE_ALARM = CommandAttributes(
     cmd_id=Command.EQUIPMENT_CONTROL,
+    attribute_transformer=None,
     additional_attributes={"device_ID": 0, "device_status": "00000000"},
     receive_types=[Command.ANSWER_YES_OR_NO],
     content_field="answer_yes_or_no",
@@ -131,6 +149,7 @@ SILENCE_ALARM = CommandAttributes(
 # NOTE: If queried frequently not all data is provisioned all the time
 GET_SCENES = CommandAttributes(
     cmd_id=Command.SYN_SCENE,
+    attribute_transformer=None,
     additional_attributes={
         "sence_group": 0,
         "answer_content": "",
