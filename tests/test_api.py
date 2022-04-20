@@ -5,7 +5,7 @@
 import asyncio
 import json
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import pytest
 
 from elro.api import K1
@@ -102,6 +102,19 @@ async def test_succesful_initialization_and_disconnect(mock_k1_connector):
     )
 
     await mock_k1_connector.async_disconnect()
+
+
+@pytest.mark.asyncio
+async def test_invalid_response(mock_k1_connector):
+    """Test timeout on connection."""
+
+    with pytest.raises(K1.K1ConnectionError):
+        with patch("tests.test_api.MOCK_AUTH_RESPONSE", b"Invalid_data\n"):
+            await mock_k1_connector.async_connect()
+
+    # Start command without valid connection
+    with pytest.raises(K1.K1ConnectionError):
+        await mock_k1_connector.async_process_command(SYN_DEVICE_STATUS, sence_group=0)
 
 
 @pytest.mark.asyncio

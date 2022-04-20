@@ -124,11 +124,15 @@ class K1:
                 _store_session(self, data[0].decode("utf-8"))
                 return
             raise K1.K1ConnectionError(
-                "Not received the expected result, cannot connect to "
+                "No data received, cannot connect to "
                 f"hub {self._remoteaddress[0]} with id {self._k1_id}."
             )
-        except TimeoutError:
-            pass
+        except (ValueError, asyncio.TimeoutError) as exception:
+            raise K1.K1ConnectionError(
+                "Not received the expected result, cannot connect to "
+                f"hub {self._remoteaddress[0]} with id {self._k1_id}."
+                f" {exception.args}"
+            ) from exception
         finally:
             self._lock.release()
 
@@ -173,7 +177,12 @@ class K1:
     ) -> dict[int, dict[str, Any]] | None:
         """Get device names."""
         iteration = 0
-        if not self._protocol or not self._transport or not self._loop:
+        if (
+            not self._protocol
+            or not self._transport
+            or not self._loop
+            or not self._session
+        ):
             raise K1.K1ConnectionError("Not connected to a K1 hub.")
 
         if attributes["attribute_transformer"]:
@@ -192,11 +201,7 @@ class K1:
             self._transport.sendto(command)
             while True:
                 # Run loop until last item
-                try:
-                    await asyncio.wait_for(self._protocol.datagram_data, TIMEOUT)
-                except asyncio.TimeoutError:
-                    print("TIMEOUT")
-                    break
+                await asyncio.wait_for(self._protocol.datagram_data, TIMEOUT)
                 if raw_data := self._protocol.datagram_data.result():
                     iteration += 1
                     _LOGGER.debug(
@@ -221,6 +226,12 @@ class K1:
                 else:
                     self._transport.sendto(ACK_APP.encode("utf-8"))
                     break
+        except (ValueError, asyncio.TimeoutError, asyncio.CancelledError) as exception:
+            raise K1.K1ConnectionError(
+                "Not received the expected result, cannot connect to "
+                f"hub {self._remoteaddress[0]} with id {self._k1_id}."
+                f" {exception.args}"
+            ) from exception
         finally:
             self._lock.release()
         return (
