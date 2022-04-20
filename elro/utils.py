@@ -285,7 +285,13 @@ def get_device_states(content: list) -> dict:
 
 def get_default(content: list) -> dict:
     """Return content from ascii."""
-    return {int(data["scene_content"][0:6], 16): data for data in content}
+    index = 0
+    return_dict = {}
+    for line in content:
+        return_dict[index] = line
+        index += 1
+
+    return return_dict
 
 
 def validate_json(raw_data: bytes) -> dict:

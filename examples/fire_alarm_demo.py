@@ -24,7 +24,7 @@ class AlarmDemo(K1):
 
     async def async_demo(self) -> None:
         """Main routine to demonstrate the API code."""
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.DEBUG)
         await self.async_connect()
 
         print("Demo GET_SCENES")

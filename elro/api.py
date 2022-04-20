@@ -216,8 +216,7 @@ class K1:
                         self._transport.sendto(ACK_APP.encode("utf-8"))
                         if content == attributes["content_sync_finished"]:
                             break
-                        if content:
-                            contentlist.append(params["data"])
+                        contentlist.append(params["data"])
 
                 else:
                     self._transport.sendto(ACK_APP.encode("utf-8"))
