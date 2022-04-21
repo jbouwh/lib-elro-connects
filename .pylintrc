@@ -1,0 +1,6 @@
+[FORMAT]
+max-line-length=140
+max-statements=100
+
+[MESSAGES CONTROL]
+disable=too-many-locals

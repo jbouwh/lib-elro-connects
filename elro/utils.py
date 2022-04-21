@@ -1,7 +1,13 @@
+"""Utilities to support Elro Connects P1 API."""
+
+from __future__ import annotations
+
+import json
 import logging
 import collections
+from typing import Any
 
-from valideer import accepts, Pattern
+from elro.device import DeviceType, DEVICE_STATE
 
 
 # From the ByteUtil class, needed by CRC_maker
@@ -55,32 +61,33 @@ def get_string_from_ascii(input_string):
     return name
 
 
-@accepts(
-    input_string=Pattern("^[_\-a-zA-Z0-9 ]*$")
-)  # Not fully supporting a wide range of characters due to partial implementation
-def get_ascii(input_string: str):
-    """
-    This function is partially reversed engineered and translated to python
-    based on the CoderUtils class in the ELRO Android app
+def get_ascii(input_string: str) -> str | None:
+    """Encode a string to hex for API use."""
+    #
+    # This function is partially reversed engineered and translated to python
+    # based on the CoderUtils class in the ELRO Android app
 
-    :param input: A string
-    :return: A hex string
-    """
+    # :param input: A string
+    # :return: A hex string
+
+    # Pattern("^[_\-a-zA-Z0-9 ]*$"
+
     countf = 0
 
     countf = 15 - len(input_string.encode("GBK"))
 
     if countf < 0:
-        logging.error(f"Input is to long '{input_string}'")
-        return
+        logging.error("Input is to long '%s'", input_string)
+        return None
 
     str_whitespace = ""
-    for i in range(countf):
+    for _ in range(countf):
         str_whitespace += "@"
 
     new_name = str_whitespace + input_string + "$"
 
-    # This is the original code and thus where the python code differs. Because this is not used, GBK encoding is probably not fully supported
+    # This is the original code and thus where the python code differs.
+    # Because this is not used, GBK encoding is probably not fully supported
 
     # byte[] nameBt = new byte[16];
     # try {
@@ -173,7 +180,7 @@ def crc_maker_char(msg):
     msg_length = int(len(msg) / 2)
     content = []
 
-    for i in range(msg_length):
+    for _ in range(msg_length):
         val = chr(int((msg[0:2]), 16))
         content.append(val)
         msg = msg[2:]
@@ -213,7 +220,7 @@ def get_eq_crc(devices):
 
     status_crc = ""
     for i in range(list_length + 1):
-        if (i + 1) in sorted_devices:
+        if i + 1 in sorted_devices:
             status_crc += crc_maker_char(sorted_devices[i + 1])
         elif i < (list_length):
             status_crc += "0000"
@@ -227,3 +234,72 @@ def get_eq_crc(devices):
         num = list_length_for_hex
 
     return num + status_crc
+
+
+def update_state_data(
+    data: dict[int, dict[str, Any]] | None,
+    data_update: dict[int, dict[str, Any]] | None,
+) -> None:
+    "Update the state."
+    if data_update is None or data is None:
+        return
+    for key in data_update.keys():
+        data[key].update(data_update[key])
+
+
+def get_device_names(content: list) -> dict:
+    """Return device names."""
+    # answer_content
+    return {
+        int(data["answer_content"][0:4], 16): {
+            "name": get_string_from_ascii(data["answer_content"][4:])
+        }
+        for data in content
+    }
+
+
+def set_device_name(argv: dict) -> None:
+    """Convert the device_name attribute to a hex representation including crc."""
+    if device_name := argv.get("device_name"):
+        device_name_hex = get_ascii(device_name)
+        crc = crc_maker(device_name)
+        argv["device_name"] = f"{device_name_hex}{crc}"
+    else:
+        raise ValueError("Value for device_name is not set!")
+
+
+def get_device_states(content: list) -> dict:
+    """Return device states."""
+
+    return {
+        hexdata["device_ID"]: {
+            "device_type": DeviceType(hexdata["device_name"]).name,
+            "signal": int(hexdata["device_status"][0:2], 16),
+            "battery": int(hexdata["device_status"][2:4], 16),
+            "device_state": DEVICE_STATE.get(hexdata["device_status"][4:6], "n/a"),
+            "device_status_data": hexdata,
+        }
+        for hexdata in content
+    }
+
+
+def get_default(content: list) -> dict:
+    """Return content from ascii."""
+    index = 0
+    return_dict = {}
+    for line in content:
+        return_dict[index] = line
+        index += 1
+
+    return return_dict
+
+
+def validate_json(raw_data: bytes) -> dict:
+    """Process the JSON basis response, work-a-round synatx errors."""
+    json_string = raw_data.decode("utf-8")
+    try:
+        data = json.loads(json_string)
+    except json.decoder.JSONDecodeError:
+        # Try correct the malformed JSON status string missing to closing brackets
+        data = json.loads(json_string + "}}")
+    return data

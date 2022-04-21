@@ -10,11 +10,12 @@ from getmac import get_mac_address
 
 from elro.hub import Hub
 from elro.mqtt import MQTTPublisher
-from elro.validation import ip_address
 
 
 async def main(hostname, hub_id, mqtt_broker, ha_autodiscover, base_topic):
+    """Startup of CLI aplication."""
     hub = Hub(hostname, 1025, hub_id)
+    hub.init_socket()
     mqtt_publisher = MQTTPublisher(mqtt_broker, ha_autodiscover, base_topic)
     async with trio.open_nursery() as nursery:
         nursery.start_soon(mqtt_publisher.handle_hub_events, hub, name="hub_events")
@@ -57,7 +58,7 @@ if __name__ == "__main__":
     k1id = args.id
     if k1id == None:
         mac = None
-        if re.search(ip_address, args.hostname):
+        if re.search(args.ip_address, args.hostname):
             mac = get_mac_address(ip=f"{args.hostname}")
         else:
             mac = get_mac_address(hostname=f"{args.hostname}")
