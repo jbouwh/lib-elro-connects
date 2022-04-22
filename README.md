@@ -1,3 +1,5 @@
+https://badge.fury.io/py/lib-elro-connects.svg
+
 **NOTE**
 
 This project is suppose to proved an API to the Elro connects K1 adapter
@@ -6,10 +8,10 @@ The code idea is based on the the code of Bas van den Berg https://github.com/di
 
 Aim of this library is to provide a API for the Elro Connects P1 connector. Example code is included.
 
+The code requires Python 3.9 or higher.
+
 A PyPi package wil become avaiable. To be installed with:
 `pip install lib-elro-connects`
-
-lib-elro-connects might will also function on the BASE smart home gateway SWM188A and the SITERWELL GS198. Both have not been tested.
 
 THIS CODE IS NOT READY FOR PRODUCTION YET, but let me know if you would like to help.
 
@@ -17,7 +19,7 @@ Kind regards,
 
 Jan Bouwhuis
 
-## Supported Devices by ERLO K1 connects SF40GA
+## Supported Devices by ELRO K1 connects SF40GA
 
 ### Fire alarms
 
@@ -38,3 +40,5 @@ Jan Bouwhuis
 ### Window and Door sensors
 
 - Elro SF40MA11
+
+> lib-elro-connects might will also function on the BASE smart home gateway SWM188A and the SITERWELL GS198. Both have not been tested.
