@@ -15,7 +15,7 @@ def get_version(package):
     return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
-with open("README.md", "r", encoding="UTF-8") as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
