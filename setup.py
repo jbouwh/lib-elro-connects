@@ -2,6 +2,8 @@
 
 import os
 import re
+import sys
+
 from setuptools import setup, find_packages
 
 
@@ -10,12 +12,15 @@ def get_version(package):
     Return package version as listed in `__version__` in `__init__.py`.
     """
     path = os.path.join(os.path.dirname(__file__), package, "__init__.py")
-    with open(path, "rb") as f:
-        init_py = f.read().decode("utf-8")
+    with open(path, "rb") as file:
+        init_py = file.read().decode("utf-8")
     return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
-with open("README.md", "r") as fh:  # pylint: disable=unspecified-encoding
+if sys.version_info < (3, 8):
+    sys.exit("Sorry, Python versions < 3.8 are not supported")
+
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 install_requires = []
