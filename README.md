@@ -1,4 +1,4 @@
-https://badge.fury.io/py/lib-elro-connects.svg
+![PyPI version](https://badge.fury.io/py/lib-elro-connects.svg)
 
 **NOTE**
 
