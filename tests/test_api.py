@@ -77,7 +77,7 @@ def help_mock_command_reply(mock_k1_connector, response):
     """Mock sendto and send a reply from mock_replies."""
     req = 0
 
-    def sendto(data):
+    def sendto(data):  # pylint disable=unused-argument
         """Mock a reply."""
         nonlocal req
         if req >= len(response):
