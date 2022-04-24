@@ -49,6 +49,19 @@ class DeviceType(Enum):
         )
 
 
+# Represent alarm device types
+ALARM_CO = "CO_ALARM"
+ALARM_FIRE = "FIRE_ALARM"
+ALARM_HEAT = "HEAT_ALARM"
+ALARM_SMOKE = "SMOKE_ALARM"
+ALARM_WATER = "WATER_ALARM"
+
+# Represent device state attributes
+ATTR_BATTERY_LEVEL = "battery"
+ATTR_DEVICE_TYPE = "device_type"
+ATTR_DEVICE_STATE = "device_state"
+ATTR_SIGNAL = "signal"
+
 # Represent the state of a device.
 DEVICE_STATE = {
     "12": "FAULT",
@@ -62,3 +75,15 @@ DEVICE_STATE = {
     "FE": "UNKNOWN",
     "FF": "OFFLINE",
 }
+
+STATE_ALARM = "ALARM"
+STATE_FAULT = "FAULT"
+STATE_FIRE_ALARM = "FIRE ALARM"
+STATE_NORMAL = "NORMAL"
+STATE_OFFLINE = "OFFLINE"
+STATE_SILENCE = "SILENCE"
+STATE_TEST_ALARM = "TEST ALARM"
+STATE_UNKNOWN = "UNKNOWN"
+
+STATES_ON = (STATE_ALARM, STATE_FIRE_ALARM, STATE_TEST_ALARM)
+STATES_OFFLINE = (STATE_OFFLINE,)

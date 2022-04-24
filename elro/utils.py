@@ -244,7 +244,10 @@ def update_state_data(
     if data_update is None or data is None:
         return
     for key in data_update.keys():
-        data[key].update(data_update[key])
+        if not key in data:
+            data[key] = data_update[key]
+        else:
+            data[key].update(data_update[key])
 
 
 def get_device_names(content: list) -> dict:
