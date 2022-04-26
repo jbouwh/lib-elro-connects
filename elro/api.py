@@ -189,6 +189,7 @@ class K1:
         **argv: int | str,
     ) -> dict[int, dict[str, Any]] | None:
         """Get device names."""
+        await self._lock.acquire()
         iteration = 0
         if (
             not self._protocol
@@ -196,6 +197,7 @@ class K1:
             or not self._loop
             or not self._session
         ):
+            self._lock.release()
             raise K1.K1ConnectionError("Not connected to a K1 hub.")
 
         if attributes["attribute_transformer"]:
@@ -208,7 +210,6 @@ class K1:
             command_data.update(cast(Mapping[str, Any], argv))
         command = self._prepare_command(command_data)
         contentlist = []
-        await self._lock.acquire()
         try:
             self._protocol.datagram_data = self._loop.create_future()
             self._transport.sendto(command)
