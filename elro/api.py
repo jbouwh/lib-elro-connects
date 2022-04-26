@@ -108,12 +108,12 @@ class K1:
         self._loop = asyncio.get_running_loop()
         if not self._loop:
             return
-        await self._lock.acquire()
         on_conn_lost, datagram_data = (
             self._loop.create_future(),
             self._loop.create_future(),
         )
         payload = (CMD_CONNECT + self._k1_id).encode("utf-8")
+        await self._lock.acquire()
         try:
             self._transport, self._protocol = await self._loop.create_datagram_endpoint(  # type: ignore
                 lambda: K1UDPHandler(payload, on_conn_lost, datagram_data),
@@ -148,6 +148,19 @@ class K1:
                 self._protocol = None
                 self._session = {}
         finally:
+            self._lock.release()
+
+    async def async_configure(self, ipaddress: str, port: int = 1025) -> None:
+        """Process updated settings."""
+        try:
+            await self._lock.acquire()
+            if self._transport and not self._protocol.on_con_lost.done():
+                self._transport.close()
+        finally:
+            self._transport = None
+            self._protocol = None
+            self._session = {}
+            self._remoteaddress = (ipaddress, port)
             self._lock.release()
 
     def _prepare_command(self, command_data: dict) -> bytes:
