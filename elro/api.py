@@ -150,6 +150,19 @@ class K1:
         finally:
             self._lock.release()
 
+    async def async_configure(self, ipaddress: str, port: int = 1025) -> None:
+        """Process updated settings."""
+        try:
+            await self._lock.acquire()
+            if self._transport and not self._protocol.on_con_lost.done():
+                self._transport.close()
+        finally:
+            self._transport = None
+            self._protocol = None
+            self._session = {}
+            self._remoteaddress = (ipaddress, port)
+            self._lock.release()
+
     def _prepare_command(self, command_data: dict) -> bytes:
         """
         Construct a valid message from data
