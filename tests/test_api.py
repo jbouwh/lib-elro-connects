@@ -263,3 +263,12 @@ async def test_set_test_alarm(mock_k1_connector, id, mode, response):
     )
     assert received["params"]["data"]["device_ID"] == id
     assert received["params"]["data"]["device_status"] == response
+
+
+@pytest.mark.asyncio
+async def test_configure(mock_k1_connector):
+    """Test configuring the connector settings."""
+    await mock_k1_connector.async_connect()
+    assert mock_k1_connector._remoteaddress == ("127.0.0.1", 1025)
+    await mock_k1_connector.async_configure("127.0.0.2", 1024)
+    assert mock_k1_connector._remoteaddress == ("127.0.0.2", 1024)
