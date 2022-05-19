@@ -76,7 +76,7 @@ class K1:
     class K1ConnectionError(Exception):
         """K1 exception class."""
 
-        def __init__(self, message: str = "K1 connection error"):
+        def __init__(self, message: str = "K1 connection error") -> None:
             self.message = message
             super().__init__(self.message)
 
@@ -189,6 +189,8 @@ class K1:
         **argv: int | str,
     ) -> dict[int, dict[str, Any]] | None:
         """Get device names."""
+        if not self._session:
+            await self.async_connect()
         await self._lock.acquire()
         iteration = 0
         if (
@@ -241,6 +243,7 @@ class K1:
                     self._transport.sendto(ACK_APP.encode("utf-8"))
                     break
         except (ValueError, asyncio.TimeoutError, asyncio.CancelledError) as exception:
+            self._session = {}
             raise K1.K1ConnectionError(
                 "Not received the expected result, cannot connect to "
                 f"hub {self._remoteaddress[0]} with id {self._k1_id}."
