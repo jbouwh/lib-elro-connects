@@ -25,7 +25,8 @@ class AlarmDemo(K1):
     async def async_demo(self) -> None:
         """Main routine to demonstrate the API code."""
         logging.basicConfig(level=logging.DEBUG)
-        await self.async_connect()
+        # You can call await self.async_connect() but if there is no actice session
+        # await self.async_connect() will be called for you
 
         print("Demo GET_SCENES")
         print(await self.async_process_command(GET_SCENES, sence_group=0))
