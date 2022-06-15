@@ -273,21 +273,21 @@ def set_device_name(argv: dict) -> None:
 
 def get_device_states(content: list) -> dict:
     """Return device states."""
-    hexdata = {}
+    return_dict = {}
     for hexdata in content:
         try:
             device_type = DeviceType(hexdata["device_name"]).name
         except ValueError:
             # Unsupported record, skip and continue silently
             continue
-        hexdata["device_ID"] = {
+        return_dict[hexdata["device_ID"]] = {
             "device_type": device_type,
             "signal": int(hexdata["device_status"][0:2], 16),
             "battery": int(hexdata["device_status"][2:4], 16),
             "device_state": DEVICE_STATE.get(hexdata["device_status"][4:6], "n/a"),
             "device_status_data": hexdata,
         }
-    return hexdata
+    return return_dict
 
 
 def get_default(content: list) -> dict:
