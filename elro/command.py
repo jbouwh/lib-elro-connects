@@ -134,6 +134,16 @@ TEST_ALARM = CommandAttributes(
     content_sync_finished=2,
     content_transformer=None,
 )
+# TEST_ALARM for water detector
+TEST_ALARM_WATER = CommandAttributes(
+    cmd_id=Command.EQUIPMENT_CONTROL,
+    attribute_transformer=None,
+    additional_attributes={"device_ID": 0, "device_status": "BB000000"},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
 
 SILENCE_ALARM = CommandAttributes(
     cmd_id=Command.EQUIPMENT_CONTROL,
