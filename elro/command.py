@@ -124,7 +124,7 @@ GET_ALL_EQUIPMENT_STATUS = CommandAttributes(
     content_transformer=get_device_states,
 )
 
-# TEST_ALARM
+# TEST_ALARM for fire alarms
 TEST_ALARM = CommandAttributes(
     cmd_id=Command.EQUIPMENT_CONTROL,
     attribute_transformer=None,
@@ -134,8 +134,8 @@ TEST_ALARM = CommandAttributes(
     content_sync_finished=2,
     content_transformer=None,
 )
-# TEST_ALARM for water detector
-TEST_ALARM_WATER = CommandAttributes(
+# TEST_ALARM_ALT for other detectors
+TEST_ALARM_ALT = CommandAttributes(
     cmd_id=Command.EQUIPMENT_CONTROL,
     attribute_transformer=None,
     additional_attributes={"device_ID": 0, "device_status": "BB000000"},

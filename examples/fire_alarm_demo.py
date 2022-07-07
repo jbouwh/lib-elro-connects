@@ -92,7 +92,7 @@ class AlarmDemo(K1):
 
         # Test alarm (assuming there are 3 fire alarms)
         # Be aware they cannot be fired alle together, silence an alarm before testing the next alarm.
-        # Use TEST_ALARM_WATER for water detectors
+        # Use TEST_ALARM_ALT for other detectors
         await self.async_connect()
         print("Test alarm 1")
         await self.async_process_command(TEST_ALARM, device_ID=1)
