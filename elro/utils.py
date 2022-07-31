@@ -280,11 +280,14 @@ def get_device_states(content: list) -> dict:
         except ValueError:
             # Unsupported record, skip and continue silently
             continue
+        device_state = hexdata["device_status"][4:6]
         return_dict[hexdata["device_ID"]] = {
             "device_type": device_type,
             "signal": int(hexdata["device_status"][0:2], 16),
             "battery": int(hexdata["device_status"][2:4], 16),
-            "device_state": DEVICE_STATE.get(hexdata["device_status"][4:6], "n/a"),
+            "device_state": DEVICE_STATE.get(
+                device_state, device_state
+            ),  # return hex device state if it is not known
             "device_status_data": hexdata,
         }
     return return_dict

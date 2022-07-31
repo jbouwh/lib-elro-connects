@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import sys
+from datetime import datetime
 
 from elro.api import K1
 from elro.command import (
@@ -22,7 +23,27 @@ INTERVAL = 5
 class AlarmDemo(K1):
     """Class to demonstrate Elro connects fire alarms."""
 
-    async def async_demo(self) -> None:
+    async def async_demo1(self) -> None:
+        """Main routine to demonstrate the API code."""
+        # You can call await self.async_connect() but if there is no actice session
+        # await self.async_connect() will be called for you
+
+        while True:
+            try:
+                data = await self.async_process_command(GET_ALL_EQUIPMENT_STATUS)
+                names = await self.async_process_command(GET_DEVICE_NAMES)
+                update_state_data(data, names)
+                print(f"=={datetime.now()}")
+                for key, item in data.items():
+                    print(
+                        f"{key} ({item.get('name')}): status={item['device_state']} data={item['device_status_data']}"
+                    )
+            except Exception:  # pylint: disable=broad-except
+                pass
+            finally:
+                await asyncio.sleep(INTERVAL)
+
+    async def async_demo2(self) -> None:
         """Main routine to demonstrate the API code."""
         logging.basicConfig(level=logging.DEBUG)
         # You can call await self.async_connect() but if there is no actice session
@@ -113,4 +134,4 @@ class AlarmDemo(K1):
 if __name__ == "__main__":
     # argv: 1 = IP_ADDRESS, 2 = API_KEY
     k1_hub = AlarmDemo(sys.argv[1], sys.argv[2])
-    asyncio.run(k1_hub.async_demo())
+    asyncio.run(k1_hub.async_demo1())

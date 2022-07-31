@@ -23,7 +23,7 @@ ATTR_NAME = "NAME"
 
 APP_ID = 0
 
-TIMEOUT = 10
+TIME_OUT = 10
 INTERVAL = 5
 UDP_PORT_NO = 1025
 
@@ -85,7 +85,9 @@ class K1:
 
         received: int
 
-    def __init__(self, ipaddress: str, k1_id: str, port: int = 1025) -> None:
+    def __init__(
+        self, ipaddress: str, k1_id: str, port: int = 1025, api_key: str | None = None
+    ) -> None:
         """Initialize the module."""
         self._transport = None
         self._protocol = None
@@ -93,6 +95,7 @@ class K1:
         self._k1_id = k1_id
         self._session: dict[str, str] = {}
         self._msg_id = 0
+        self._api_key = api_key
 
     async def async_connect(self) -> None:
         """Connect to the K1 hub."""
@@ -104,6 +107,9 @@ class K1:
                 for line in data.rstrip().split("\n"):
                     key, value = line.strip().split(":")
                     self._session[key] = value
+                # Allow to override the key if the connector is not providing the key or when the key is obtained from the cloud
+                if self._api_key:
+                    self._session[ATTR_KEY] = self._api_key
 
         self._loop = asyncio.get_running_loop()
         if not self._loop:
@@ -119,7 +125,7 @@ class K1:
                 lambda: K1UDPHandler(payload, on_conn_lost, datagram_data),
                 remote_addr=self._remoteaddress,
             )
-            await asyncio.wait_for(datagram_data, 15.0)
+            await asyncio.wait_for(datagram_data, TIME_OUT)
             if data := datagram_data.result():
                 _store_session(self, data[0].decode("utf-8"))
                 return
@@ -217,7 +223,7 @@ class K1:
             self._transport.sendto(command)
             while True:
                 # Run loop until last item
-                await asyncio.wait_for(self._protocol.datagram_data, TIMEOUT)
+                await asyncio.wait_for(self._protocol.datagram_data, TIME_OUT)
                 if raw_data := self._protocol.datagram_data.result():
                     iteration += 1
                     _LOGGER.debug(

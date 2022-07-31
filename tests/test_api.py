@@ -104,6 +104,7 @@ async def test_succesful_initialization_and_disconnect(mock_k1_connector):
     await mock_k1_connector.async_disconnect()
 
 
+@patch("elro.api.TIME_OUT", 0.3)
 @pytest.mark.asyncio
 async def test_invalid_response(mock_k1_connector):
     """Test timeout on connection."""
