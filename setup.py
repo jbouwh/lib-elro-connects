@@ -46,7 +46,7 @@ setup(
         )
     ],
     classifiers=[
-        "Development Status :: 3 - Beta",
+        "Development Status :: 4 - Beta",
         "Topic :: Home Automation",
         "Programming Language :: Python :: 3.9",
         "License :: OSI Approved :: MIT License",
