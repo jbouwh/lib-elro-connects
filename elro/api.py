@@ -203,10 +203,12 @@ class K1:
             not self._protocol
             or not self._transport
             or not self._loop
-            or not self._session
+            or ATTR_KEY not in self._session
         ):
             self._lock.release()
-            raise K1.K1ConnectionError("Not connected to a K1 hub.")
+            raise K1.K1ConnectionError(
+                "Not connected to a K1 hub or incorrect API key."
+            )
 
         if attributes["attribute_transformer"]:
             attributes["attribute_transformer"](argv)
@@ -262,3 +264,18 @@ class K1:
             if attributes["content_transformer"] is not None
             else None
         )
+
+    @property
+    def api_key(self) -> str | None:
+        """Return the api key."""
+        return self._session.get(ATTR_KEY, None)
+
+    @property
+    def bind_key(self) -> str | None:
+        """Return the bind-key."""
+        return self._session.get(ATTR_BIND, None)
+
+    @property
+    def connector_id(self) -> str | None:
+        """Return the connector-id."""
+        return self._session.get(ATTR_NAME, None)

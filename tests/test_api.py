@@ -4,6 +4,7 @@
 
 import asyncio
 import json
+from threading import local
 
 from unittest.mock import MagicMock, patch
 import pytest
@@ -19,7 +20,8 @@ from elro.command import (
     SILENCE_ALARM,
 )
 
-MOCK_AUTH_RESPONSE = b"NAME:ST_1234567890ab\nBIND:deadbeef012345678deadbeef0123456\nKEY:deadbeef012345678deadbeef0123456\n"
+MOCK_AUTH_RESPONSE = b"NAME:ST_1234567890ab\nBIND:0000beef012345678deadbeef0123456\nKEY:deadbeef012345678deadbeef0123456\n"
+MOCK_AUTH_RESPONSE_LIMITED = b"NAME:ST_1234567890ab\n"
 
 MOCK_SCENE_RESPONSE = [
     b'{"msgId" : 3640,"action" : "devSend","params" : {"devTid" : "ST_1234567890ab","appTid" :  [],"data" : {"cmdId" : 26,"sence_group" : 0,"answer_content" : "000000" }}}\n',
@@ -73,6 +75,28 @@ def mock_k1_connector():
     return K1Mock("127.0.0.1", "ST_1234567890ab")
 
 
+@pytest.fixture
+def mock_k1_connector_no_key():
+    """Mock a K1 connector without api key exposure."""
+
+    async def _async_create_datagram_endpoint(protocol_factory, remote_addr):
+        """Mock protocol handler"""
+        factory = protocol_factory()
+        # Mock transport
+        transport = MagicMock()
+        transport().sendto = MagicMock()
+        factory.connection_made(transport)
+        # Mock authentication positive response
+        factory.datagram_received(MOCK_AUTH_RESPONSE_LIMITED, remote_addr)
+        return (transport, factory)
+
+    loop = asyncio.get_event_loop()
+    loop.create_datagram_endpoint = MagicMock()
+    loop.create_datagram_endpoint.side_effect = _async_create_datagram_endpoint
+
+    return K1Mock("127.0.0.1", "ST_1234567890ab")
+
+
 def help_mock_command_reply(mock_k1_connector, response):
     """Mock sendto and send a reply from mock_replies."""
     req = 0
@@ -93,15 +117,14 @@ def help_mock_command_reply(mock_k1_connector, response):
 
 
 @pytest.mark.asyncio
-async def test_succesful_initialization_and_disconnect(mock_k1_connector):
+async def test_succesful_initialization_and_disconnect(mock_k1_connector_no_key):
     """Test the connection."""
-    await mock_k1_connector.async_connect()
+    await mock_k1_connector_no_key.async_connect()
     assert (
-        mock_k1_connector._transport.sendto.call_args_list[0][0][0]
+        mock_k1_connector_no_key._transport.sendto.call_args_list[0][0][0]
         == b"IOT_KEY?ST_1234567890ab"
     )
-
-    await mock_k1_connector.async_disconnect()
+    await mock_k1_connector_no_key.async_disconnect()
 
 
 @patch("elro.api.TIME_OUT", 0.3)
@@ -116,6 +139,19 @@ async def test_invalid_response(mock_k1_connector):
     # Start command without valid connection
     with pytest.raises(K1.K1ConnectionError):
         await mock_k1_connector.async_process_command(SYN_DEVICE_STATUS, sence_group=0)
+
+
+@pytest.mark.asyncio
+async def test_missing_key(mock_k1_connector_no_key):
+    """Test missing api_key."""
+
+    await mock_k1_connector_no_key.async_connect()
+
+    # Start command without valid connection
+    with pytest.raises(K1.K1ConnectionError):
+        await mock_k1_connector_no_key.async_process_command(
+            SYN_DEVICE_STATUS, sence_group=0
+        )
 
 
 @pytest.mark.asyncio
@@ -155,6 +191,16 @@ async def test_sync_device_status(mock_k1_connector):
     assert result[3]["signal"] == 1
     assert result[3]["battery"] == 5
     assert result[3]["device_state"] == "UNKNOWN"
+
+
+@pytest.mark.asyncio
+async def test_api_access_properties(mock_k1_connector):
+    """Test api access properties."""
+    await mock_k1_connector.async_connect()
+
+    assert mock_k1_connector.connector_id == "ST_1234567890ab"
+    assert mock_k1_connector.bind_key == "0000beef012345678deadbeef0123456"
+    assert mock_k1_connector.api_key == "deadbeef012345678deadbeef0123456"
 
 
 @pytest.mark.asyncio
@@ -273,3 +319,45 @@ async def test_configure(mock_k1_connector):
     assert mock_k1_connector._remoteaddress == ("127.0.0.1", 1025)
     await mock_k1_connector.async_configure("127.0.0.2", 1024)
     assert mock_k1_connector._remoteaddress == ("127.0.0.2", 1024)
+
+
+@pytest.mark.asyncio
+async def test_key_override():
+    """Test overriding the API key."""
+
+    # auth response WITH key to override
+    auth_response = MOCK_AUTH_RESPONSE
+
+    async def _async_create_datagram_endpoint(protocol_factory, remote_addr):
+        """Mock protocol handler"""
+        factory = protocol_factory()
+        # Mock transport
+        transport = MagicMock()
+        transport().sendto = MagicMock()
+        factory.connection_made(transport)
+        # Mock authentication positive response
+        factory.datagram_received(auth_response, remote_addr)
+        return (transport, factory)
+
+    loop = asyncio.get_event_loop()
+    loop.create_datagram_endpoint = MagicMock()
+    loop.create_datagram_endpoint.side_effect = _async_create_datagram_endpoint
+
+    # test override provided key
+
+    mock_k1_connector = K1Mock("127.0.0.1", "ST_1234567890ab", api_key="override_key")
+    await mock_k1_connector.async_connect()
+
+    assert mock_k1_connector.connector_id == "ST_1234567890ab"
+    assert mock_k1_connector.bind_key == "0000beef012345678deadbeef0123456"
+    assert mock_k1_connector.api_key == "override_key"
+
+    # test add missing key with auth response WITHOUT key
+    auth_response = MOCK_AUTH_RESPONSE_LIMITED
+
+    mock_k1_connector = K1Mock("127.0.0.1", "ST_1234567890ab", api_key="override_key")
+    await mock_k1_connector.async_connect()
+
+    assert mock_k1_connector.connector_id == "ST_1234567890ab"
+    assert mock_k1_connector.bind_key is None
+    assert mock_k1_connector.api_key == "override_key"
