@@ -21,7 +21,7 @@ MOCK_AUTH_RESPONSE = {
 MOCK_DEVICE_RESPONSE = [
     {
         "ctrlKey": "deadbeefdeadbeefdeadbeefdeadbeef",
-        "devTid": "ST_84f3eb1a0021",
+        "devTid": "ST_deadbeef0000",
         "devType": "INDEPENDENT",
         "mid": "0123456789ab",
         "bindKey": "beefdead012345678beefdead0123456",
