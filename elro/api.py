@@ -156,7 +156,9 @@ class K1:
         finally:
             self._lock.release()
 
-    async def async_configure(self, ipaddress: str, port: int = 1025) -> None:
+    async def async_configure(
+        self, ipaddress: str, port: int = 1025, api_key: str | None = None
+    ) -> None:
         """Process updated settings."""
         try:
             await self._lock.acquire()
@@ -166,6 +168,7 @@ class K1:
             self._transport = None
             self._protocol = None
             self._session = {}
+            self._api_key = api_key
             self._remoteaddress = (ipaddress, port)
             self._lock.release()
 
