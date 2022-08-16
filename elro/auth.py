@@ -7,12 +7,15 @@ from json import dumps
 from dataclasses import dataclass
 from typing import TypedDict
 
+import socket
+import json
 import aiohttp
+
 
 CLIENT_TYPE = "APP"
 PID = "01288154146"
-URL_LOGIN = "https://uaa-openapi.hekreu.me/login"
-URL_DEVICE_LIST = "https://user-openapi.hekreu.me/device"
+BASE_UAA_URL = "https://uaa-openapi."
+BASE_USER_URL = "https://user-openapi."
 
 
 @dataclass
@@ -48,6 +51,9 @@ class ElroConnectsSession:
     def __init__(self) -> None:
         """Initialize."""
         self._session_cache = None
+        self._domain = self._get_domain()
+        if not self._domain.startswith("hekr"): # default
+            self._domain = "hekr.me"
 
     async def async_login(
         self, username: str, password: str
@@ -64,7 +70,7 @@ class ElroConnectsSession:
         }
 
         async with aiohttp.ClientSession(json_serialize=dumps) as session:
-            async with session.post(URL_LOGIN, json=body, headers=headers) as resp:
+            async with session.post(BASE_UAA_URL + self._domain + "/login", json=body, headers=headers) as resp:
                 response = await resp.json()
 
         response["last_login"] = datetime.now()
@@ -75,6 +81,31 @@ class ElroConnectsSession:
     def session(self) -> ElroConnectsCloudSessionCache | None:
         """Return the current session."""
         return self._session_cache
+
+    def _get_domain(self):
+        """Return the API main domain name address"""
+
+        sckt = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        host="info.hekr.me"
+        port=91
+        sckt.connect((host,port))
+        message = "{\"action\":\"getAppDomain\"}\n"
+        sckt.send(message.encode())
+        msg = sckt.recv(1024)
+
+        try:
+            parsed_data = json.loads(msg)
+        except json.decoder.JSONDecodeError:
+            return ""
+
+        if parsed_data['code'] != 200:
+            # some proper error handling, for now it prints the issue
+            print(parsed_data['code'])
+            print(parsed_data['desc'])
+        elif 'dcInfo' in parsed_data:
+            return parsed_data['dcInfo']['domain']
+
+        return ""
 
     async def async_get_connectors(self) -> list[ElroConnectsConnector]:
         """Return as list of registered connectors."""
@@ -89,7 +120,7 @@ class ElroConnectsSession:
         }
 
         async with aiohttp.ClientSession(json_serialize=dumps) as session:
-            async with session.get(URL_DEVICE_LIST, headers=headers) as resp:
+            async with session.get(BASE_USER_URL + self._domain + "/device", headers=headers) as resp:
                 response = await resp.json()
         connector_list = [
             ElroConnectsConnector(
