@@ -113,6 +113,7 @@ class ElroConnectsSession:
             return ""
 
         if not self._domain.startswith("hekr"): # default
+            self._domain = None
             return "hekr.me"
 
         return self._domain
