@@ -69,6 +69,7 @@ DEVICE_STATE = {
     "17": "TEST ALARM",
     "19": "FIRE ALARM",
     "22": "FIRE ALARM",
+    "66": "NORMAL",
     "1B": "SILENCE",
     "BB": "TEST ALARM",
     "55": "ALARM",  # OPEN window sensor
