@@ -2,7 +2,8 @@
 
 **NOTE**
 
-This project is suppose to proved an API to the Elro connects K1 adapter
+This project is suppose to provide an API for the Elro connects K1 adapter.
+Thare is a Elro Connects K2 adapter, but is not supported with this library.
 
 The code idea is based on the the code of Bas van den Berg https://github.com/dib0/elro_connects.
 
@@ -10,10 +11,8 @@ Aim of this library is to provide a API for the Elro Connects P1 connector. Exam
 
 The code requires Python 3.9 or higher.
 
-A PyPi package wil become avaiable. To be installed with:
+A PyPi package wil become available. To be installed with:
 `pip install lib-elro-connects`
-
-THIS CODE IS NOT READY FOR PRODUCTION YET, but let me know if you would like to help.
 
 Kind regards,
 
