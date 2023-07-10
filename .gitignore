@@ -108,7 +108,4 @@ venv.bak/
 
 # vscode
 .vscode/*
-/.vs/lib-elro-connects/config/applicationhost.config
-/.vs/lib-elro-connects/FileContentIndex
-/.vs/lib-elro-connects/v17
-/.vs/slnx.sqlite
+.vs/*

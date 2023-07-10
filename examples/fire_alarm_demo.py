@@ -25,6 +25,7 @@ class AlarmDemo(K1):
 
     async def async_demo1(self) -> None:
         """Main routine to demonstrate the API code."""
+        #logging.basicConfig(level=logging.DEBUG)
         # You can call await self.async_connect() but if there is no actice session
         # await self.async_connect() will be called for you
 
@@ -38,7 +39,8 @@ class AlarmDemo(K1):
                     print(
                         f"{key} ({item.get('name')}): status={item['device_state']} data={item['device_status_data']}"
                     )
-            except Exception:  # pylint: disable=broad-except
+            except Exception as e:  # pylint: disable=broad-except
+                print(f"Exception caught {e.args}")
                 pass
             finally:
                 await asyncio.sleep(INTERVAL)

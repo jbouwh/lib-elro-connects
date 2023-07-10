@@ -240,6 +240,8 @@ class K1:
                         else None,
                     )
                     self._protocol.datagram_data = self._loop.create_future()
+                    if (raw_data[0].decode("utf-8").strip().casefold() == "{ST_answer_OK}".casefold()):
+                        continue
                     data = validate_json(raw_data[0])
                     params = data["params"]
                     cmd_id = params["data"]["cmdId"]
