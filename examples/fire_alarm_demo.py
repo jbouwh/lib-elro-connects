@@ -38,9 +38,8 @@ class AlarmDemo(K1):
                     print(
                         f"{key} ({item.get('name')}): status={item['device_state']} data={item['device_status_data']}"
                     )
-            except Exception as e:  # pylint: disable=broad-except
-                print(f"Exception caught {e.args}")
-                pass
+            except Exception as err:  # pylint: disable=broad-except
+                print(f"Exception caught {err.args}")
             finally:
                 await asyncio.sleep(INTERVAL)
 
