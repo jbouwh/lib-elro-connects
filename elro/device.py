@@ -55,28 +55,13 @@ ALARM_FIRE = "FIRE_ALARM"
 ALARM_HEAT = "HEAT_ALARM"
 ALARM_SMOKE = "SMOKE_ALARM"
 ALARM_WATER = "WATER_ALARM"
+DOOR_WINDOW_SENSOR = "DOOR_WINDOW_SENSOR"
 
 # Represent device state attributes
 ATTR_BATTERY_LEVEL = "battery"
 ATTR_DEVICE_TYPE = "device_type"
 ATTR_DEVICE_STATE = "device_state"
 ATTR_SIGNAL = "signal"
-
-# Represent the state of a device.
-DEVICE_STATE = {
-    "12": "FAULT",
-    "15": "SILENCE",
-    "17": "TEST ALARM",
-    "19": "FIRE ALARM",
-    "22": "FIRE ALARM",
-    "66": "NORMAL",
-    "1B": "SILENCE",
-    "BB": "TEST ALARM",
-    "55": "ALARM",  # OPEN window sensor
-    "AA": "NORMAL",  # CLOSED window sensor
-    "FE": "UNKNOWN",
-    "FF": "OFFLINE",
-}
 
 STATE_ALARM = "ALARM"
 STATE_FAULT = "FAULT"
@@ -89,3 +74,20 @@ STATE_UNKNOWN = "UNKNOWN"
 
 STATES_ON = (STATE_ALARM, STATE_FIRE_ALARM, STATE_TEST_ALARM)
 STATES_OFFLINE = (STATE_OFFLINE,)
+
+# Represent the state of a device.
+DEVICE_STATE = {
+    "01": STATE_NORMAL,
+    "12": STATE_FAULT,
+    "15": STATE_SILENCE,
+    "17": STATE_TEST_ALARM,
+    "19": STATE_FIRE_ALARM,
+    "22": STATE_FIRE_ALARM,
+    "66": STATE_NORMAL,
+    "1B": STATE_SILENCE,
+    "BB": STATE_TEST_ALARM,
+    "55": STATE_ALARM,  # OPEN window sensor
+    "AA": STATE_NORMAL,  # CLOSED window sensor
+    "FE": STATE_UNKNOWN,
+    "FF": STATE_OFFLINE,
+}
