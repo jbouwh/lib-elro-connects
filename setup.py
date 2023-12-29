@@ -43,6 +43,7 @@ setup(
             [
                 "examples/fire_alarm_demo.py",
                 "examples/cloud_login_demo.py",
+                "examples/socket_demo.py",
             ],
         )
     ],
