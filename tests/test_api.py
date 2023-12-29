@@ -44,6 +44,15 @@ MOCK_GET_DEVICE_NAME_RESPONSE = [
     b'{"msgId" : 3651,"action" : "devSend","params" : {"devTid" : "ST_1234567890ab","appTid" :  [],"data" : {"cmdId" : 17,"answer_content" : "NAME_OVER" }}}\n',
 ]
 
+MOCK_SOCKET_STATUS_ON_RESPONSE = [
+    b'{"msgId" : 3652,"action" : "devSend","params" : {"devTid" : "ST_1234567890ab","appTid" :  [],"data" : {"cmdId" : 19,"device_ID" : 1,"device_name" : "1200","device_status" : "04FF0101" }}}\n',
+    b'{"msgId" : 3653,"action" : "devSend","params" : {"devTid" : "ST_1234567890ab","appTid" :  [],"data" : {"cmdId" : 19,"device_ID" : 65535,"device_name" : "STATUES","device_status" : "OVER" }}}\n',
+]
+MOCK_SOCKET_STATUS_OFF_RESPONSE = [
+    b'{"msgId" : 3654,"action" : "devSend","params" : {"devTid" : "ST_1234567890ab","appTid" :  [],"data" : {"cmdId" : 19,"device_ID" : 1,"device_name" : "1200","device_status" : "04FF0100" }}}\n',
+    b'{"msgId" : 3655,"action" : "devSend","params" : {"devTid" : "ST_1234567890ab","appTid" :  [],"data" : {"cmdId" : 19,"device_ID" : 65535,"device_name" : "STATUES","device_status" : "OVER" }}}\n',
+]
+
 MOCK_SET_EQUIPMENT_RESPONSE = [
     b'{"msgId" : 8,"action" : "devSend","params" : {"devTid" : "ST_1234567890ab","appTid" :  [],"data" : {"cmdId" : 11,"answer_yes_or_no" : 2 }}}\n'
 ]

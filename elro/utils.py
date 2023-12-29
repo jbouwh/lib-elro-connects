@@ -271,7 +271,7 @@ def set_device_name(argv: dict) -> None:
         raise ValueError("Value for device_name is not set!")
 
 
-def get_device_states(content: list) -> dict:
+def get_device_states(content: list) -> dict[str, Any]:
     """Return device states."""
     return_dict = {}
     for hexdata in content:
@@ -289,6 +289,7 @@ def get_device_states(content: list) -> dict:
                 device_state, device_state
             ),  # return hex device state if it is not known
             "device_status_data": hexdata,
+            "device_value_data": int(hexdata["device_status"][6:8], 16),
         }
     return return_dict
 
