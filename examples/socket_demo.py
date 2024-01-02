@@ -64,8 +64,16 @@ class SocketDemo(K1):
 
 
 if __name__ == "__main__":
-    # argv: 1 = IP_ADDRESS, 2 = API_KEY, 3 = device_id
-    ARG_DEVICE_ID = int(sys.argv.get[3]) if len(sys.argv) > 3 else None
+    # argv: 1 = IP_ADDRESS, 2 = API_KEY, 3 = device_id, 4 = command_hex
+    if len(sys.argv) == 1:
+        print(
+            f"Elro Connects socket test util.\n"
+            f"Query only:\n{sys.argv[0]} ip-adress api-key\n\n"
+            f"Execute a command:\n{sys.argv[0]} "
+            "ip-adress api-key device_id command_hex"
+        )
+        sys.exit(0)
+    ARG_DEVICE_ID = int(sys.argv[3]) if len(sys.argv) > 3 else None
     ARG_COMMAND_HEX = sys.argv[4] if len(sys.argv) > 4 else None
     k1_hub = SocketDemo(sys.argv[1], sys.argv[2])
     if ARG_COMMAND_HEX is not None:
