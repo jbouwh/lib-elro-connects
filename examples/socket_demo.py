@@ -48,7 +48,7 @@ class SocketDemo(K1):
             attribute_transformer=None,
             additional_attributes={
                 "device_ID": 0,
-                "device_status": f"{command_code_hex}000000",
+                "device_status": f"{command_code_hex}00000000"[:8],
             },
             receive_types=[Command.ANSWER_YES_OR_NO],
             content_field="answer_yes_or_no",
