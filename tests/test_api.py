@@ -203,6 +203,38 @@ async def test_sync_device_status(mock_k1_connector):
 
 
 @pytest.mark.asyncio
+async def test_sync_socket_status(mock_k1_connector):
+    """Test get device status."""
+    await mock_k1_connector.async_connect()
+
+    help_mock_command_reply(mock_k1_connector, MOCK_SOCKET_STATUS_OFF_RESPONSE)
+
+    result = await mock_k1_connector.async_process_command(
+        SYN_DEVICE_STATUS, sence_group=0
+    )
+
+    assert result[1]["device_type"] == "SOCKET"
+    assert result[1]["signal"] == 4
+    assert result[1]["battery"] == 255
+    assert result[1]["device_state"] == "NORMAL"
+    assert result[1]["device_value_data"] == 0
+    assert result[1]["device_value"] == "off"
+
+    help_mock_command_reply(mock_k1_connector, MOCK_SOCKET_STATUS_ON_RESPONSE)
+
+    result = await mock_k1_connector.async_process_command(
+        SYN_DEVICE_STATUS, sence_group=0
+    )
+
+    assert result[1]["device_type"] == "SOCKET"
+    assert result[1]["signal"] == 4
+    assert result[1]["battery"] == 255
+    assert result[1]["device_state"] == "NORMAL"
+    assert result[1]["device_value_data"] == 1
+    assert result[1]["device_value"] == "on"
+
+
+@pytest.mark.asyncio
 async def test_api_access_properties(mock_k1_connector):
     """Test api access properties."""
     await mock_k1_connector.async_connect()

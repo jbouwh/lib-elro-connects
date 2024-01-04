@@ -7,7 +7,7 @@ import logging
 import collections
 from typing import Any
 
-from elro.device import DeviceType, DEVICE_STATE
+from elro.device import DEVICE_VALUE, DeviceType, DEVICE_STATE
 
 
 # From the ByteUtil class, needed by CRC_maker
@@ -281,6 +281,7 @@ def get_device_states(content: list) -> dict[str, Any]:
             # Unsupported record, skip and continue silently
             continue
         device_state = hexdata["device_status"][4:6]
+        device_value_data = int(hexdata["device_status"][6:8], 16)
         return_dict[hexdata["device_ID"]] = {
             "device_type": device_type,
             "signal": int(hexdata["device_status"][0:2], 16),
@@ -288,8 +289,11 @@ def get_device_states(content: list) -> dict[str, Any]:
             "device_state": DEVICE_STATE.get(
                 device_state, device_state
             ),  # return hex device state if it is not known
+            "device_value": DEVICE_VALUE.get(
+                device_value_data, hex(device_value_data)
+            ),  # return hex device value if it is not known
             "device_status_data": hexdata,
-            "device_value_data": int(hexdata["device_status"][6:8], 16),
+            "device_value_data": device_value_data,
         }
     return return_dict
 
