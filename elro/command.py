@@ -155,6 +155,26 @@ SILENCE_ALARM = CommandAttributes(
     content_transformer=None,
 )
 
+SOCKET_OFF = CommandAttributes(
+    cmd_id=Command.EQUIPMENT_CONTROL,
+    attribute_transformer=None,
+    additional_attributes={"device_ID": 0, "device_status": "01000000"},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
+
+SOCKET_ON = CommandAttributes(
+    cmd_id=Command.EQUIPMENT_CONTROL,
+    attribute_transformer=None,
+    additional_attributes={"device_ID": 0, "device_status": "01010000"},
+    receive_types=[Command.ANSWER_YES_OR_NO],
+    content_field="answer_yes_or_no",
+    content_sync_finished=2,
+    content_transformer=None,
+)
+
 # GET_SCENES returns a dict[{scene_id}, None]
 # NOTE: If queried frequently not all data is provisioned all the time
 GET_SCENES = CommandAttributes(

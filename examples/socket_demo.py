@@ -64,12 +64,12 @@ class SocketDemo(K1):
 
 
 if __name__ == "__main__":
-    # argv: 1 = IP_ADDRESS, 2 = API_KEY, 3 = device_id, 4 = command_hex
+    # argv: 1=IP_ADDRESS, 2=API_KEY, 3=device_id, 4=command_hex (0100=off, 0101=on)
     if len(sys.argv) == 1:
         print(
             f"Elro Connects socket test util.\n"
             f"Query only:\n{sys.argv[0]} ip-adress api-key\n\n"
-            f"Execute a command:\n{sys.argv[0]} "
+            f"Execute a command (0100=off, 0101=on):\n{sys.argv[0]} "
             "ip-adress api-key device_id command_hex"
         )
         sys.exit(0)
