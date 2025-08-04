@@ -7,7 +7,7 @@ import logging
 import collections
 from typing import Any
 
-from elro.device import DEVICE_VALUE, DeviceType, DEVICE_STATE
+from elro.device import DEVICE_VALUE, STATE_NORMAL, DeviceType, DEVICE_STATE
 
 
 # From the ByteUtil class, needed by CRC_maker
@@ -273,6 +273,16 @@ def set_device_name(argv: dict) -> None:
 
 def get_device_states(content: list) -> dict[str, Any]:
     """Return device states."""
+
+    def _device_state(device_state: str, device_type: str) -> str:
+        """Get the correct device state for door contacts"""
+        if device_state=="AA" and device_type != DeviceType.DOOR_WINDOW_SENSOR.name:
+            return STATE_NORMAL
+        return DEVICE_STATE.get(
+            device_state, device_state
+        )
+
+
     return_dict = {}
     for hexdata in content:
         try:
@@ -286,7 +296,7 @@ def get_device_states(content: list) -> dict[str, Any]:
             "device_type": device_type,
             "signal": int(hexdata["device_status"][0:2], 16),
             "battery": int(hexdata["device_status"][2:4], 16),
-            "device_state": DEVICE_STATE.get(
+            "device_state": _device_state(
                 device_state, device_state
             ),  # return hex device state if it is not known
             "device_value": DEVICE_VALUE.get(
