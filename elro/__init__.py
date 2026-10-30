@@ -1,3 +1,3 @@
 """Elro connects P1 API."""
 
-__version__ = "0.6.3.0"
+__version__ = "0.6.4.0"
