@@ -8,6 +8,7 @@ from threading import local
 
 from unittest.mock import MagicMock, patch
 import pytest
+import pytest_asyncio
 
 from elro.api import K1
 from elro.command import (
@@ -62,8 +63,8 @@ class K1Mock(K1):
     """Mock class."""
 
 
-@pytest.fixture
-def mock_k1_connector():
+@pytest_asyncio.fixture
+async def mock_k1_connector():
     """Mock a K1 connector."""
 
     async def _async_create_datagram_endpoint(protocol_factory, remote_addr):
@@ -77,15 +78,15 @@ def mock_k1_connector():
         factory.datagram_received(MOCK_AUTH_RESPONSE, remote_addr)
         return (transport, factory)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     loop.create_datagram_endpoint = MagicMock()
     loop.create_datagram_endpoint.side_effect = _async_create_datagram_endpoint
 
     return K1Mock("127.0.0.1", "ST_1234567890ab")
 
 
-@pytest.fixture
-def mock_k1_connector_no_key():
+@pytest_asyncio.fixture
+async def mock_k1_connector_no_key():
     """Mock a K1 connector without api key exposure."""
 
     async def _async_create_datagram_endpoint(protocol_factory, remote_addr):
@@ -99,7 +100,7 @@ def mock_k1_connector_no_key():
         factory.datagram_received(MOCK_AUTH_RESPONSE_LIMITED, remote_addr)
         return (transport, factory)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     loop.create_datagram_endpoint = MagicMock()
     loop.create_datagram_endpoint.side_effect = _async_create_datagram_endpoint
 
@@ -380,7 +381,7 @@ async def test_key_override():
         factory.datagram_received(auth_response, remote_addr)
         return (transport, factory)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     loop.create_datagram_endpoint = MagicMock()
     loop.create_datagram_endpoint.side_effect = _async_create_datagram_endpoint
 
