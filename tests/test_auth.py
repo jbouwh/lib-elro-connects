@@ -6,6 +6,7 @@
 from unittest.mock import AsyncMock, patch
 
 import json
+import aiohttp
 import pytest
 
 from elro.auth import ElroConnectsSession
@@ -178,3 +179,69 @@ async def test_get_device_info_without_login(mock_get):
     cloud_session = ElroConnectsSession()
     with pytest.raises(ValueError):
         await cloud_session.async_get_connectors()
+
+
+def help_assert_login_request(mock_post) -> None:
+    """Assert the login payload is serialized explicitly."""
+    kwargs = mock_post.call_args.kwargs
+    assert "json" not in kwargs
+    assert json.loads(kwargs["data"]) == {
+        "pid": "01288154146",
+        "username": MOCK_USER,
+        "password": MOCK_PASSWORD,
+        "clientType": "APP",
+    }
+    assert kwargs["headers"]["Content-Type"] == "application/json"
+
+
+@pytest.mark.asyncio
+@patch(
+    "elro.auth.ElroConnectsSession._async_get_domain",
+    AsyncMock(return_value="hekr.me"),
+)
+async def test_login_with_own_session(mock_get, mock_post):
+    """Test the login without a passed session, a session is created and closed."""
+    mock_post.return_value.__aenter__.return_value.json = AsyncMock(
+        side_effect=[MOCK_AUTH_RESPONSE]
+    )
+    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+        side_effect=[MOCK_DEVICE_RESPONSE]
+    )
+
+    cloud_session = ElroConnectsSession()
+    with patch("aiohttp.ClientSession.close", AsyncMock()) as mock_close:
+        await cloud_session.async_login(MOCK_USER, MOCK_PASSWORD)
+        assert mock_close.await_count == 1
+        connector_list = await cloud_session.async_get_connectors()
+        assert mock_close.await_count == 2
+
+    help_assert_login_request(mock_post)
+    assert cloud_session.session["access_token"] == MOCK_AUTH_RESPONSE["access_token"]
+    assert connector_list[0]["dev_id"] == MOCK_DEVICE_RESPONSE[0]["devTid"]
+
+
+@pytest.mark.asyncio
+@patch(
+    "elro.auth.ElroConnectsSession._async_get_domain",
+    AsyncMock(return_value="hekr.me"),
+)
+async def test_login_with_passed_session(mock_get, mock_post):
+    """Test the login with a passed session, the session is used and not closed."""
+    mock_post.return_value.__aenter__.return_value.json = AsyncMock(
+        side_effect=[MOCK_AUTH_RESPONSE]
+    )
+    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+        side_effect=[MOCK_DEVICE_RESPONSE]
+    )
+
+    async with aiohttp.ClientSession() as websession:
+        cloud_session = ElroConnectsSession(session=websession)
+        with patch("aiohttp.ClientSession.__init__") as mock_init:
+            await cloud_session.async_login(MOCK_USER, MOCK_PASSWORD)
+            connector_list = await cloud_session.async_get_connectors()
+        mock_init.assert_not_called()
+        assert not websession.closed
+
+    help_assert_login_request(mock_post)
+    assert cloud_session.session["access_token"] == MOCK_AUTH_RESPONSE["access_token"]
+    assert connector_list[0]["dev_id"] == MOCK_DEVICE_RESPONSE[0]["devTid"]
