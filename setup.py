@@ -37,6 +37,8 @@ setup(
     url="https://github.com/jbouwh/lib-elro-connects",
     # package_dir={"": ""},
     packages=find_packages(where="elro"),
+    # Mark the package as typed (PEP 561)
+    package_data={"elro": ["py.typed"]},
     data_files=[
         (
             "share/lib-elro-connects",
