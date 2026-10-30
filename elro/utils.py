@@ -297,7 +297,7 @@ def get_device_states(content: list) -> dict[str, Any]:
             "signal": int(hexdata["device_status"][0:2], 16),
             "battery": int(hexdata["device_status"][2:4], 16),
             "device_state": _device_state(
-                device_state, device_state
+                device_state, device_type
             ),  # return hex device state if it is not known
             "device_value": DEVICE_VALUE.get(
                 device_value_data, hex(device_value_data)
