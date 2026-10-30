@@ -18,5 +18,14 @@ link_dir() {
   ln -sfn "$target" "$link"
 }
 
+# Restore a one-time migration of the home directory state into the new volumes
+MIGRATE_DIR="$REPO_DIR/.claude/migrate"
+if [ -d "$MIGRATE_DIR" ]; then
+  echo "Restoring Claude Code session history from $MIGRATE_DIR..."
+  mkdir -p "$HOME/.claude"
+  cp -an "$MIGRATE_DIR/claude/." "$HOME/.claude/"
+  rm -rf "$MIGRATE_DIR"
+fi
+
 link_dir "$REPO_DIR/.claude/memory" "$PROJECT_DIR/memory"
 link_dir "$REPO_DIR/.claude/plans" "$HOME/.claude/plans"
