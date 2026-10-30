@@ -4,6 +4,7 @@
 
 import asyncio
 import json
+import socket
 from threading import local
 
 from unittest.mock import MagicMock, patch
@@ -403,3 +404,39 @@ async def test_key_override():
     assert mock_k1_connector.connector_id == "ST_1234567890ab"
     assert mock_k1_connector.bind_key is None
     assert mock_k1_connector.api_key == "override_key"
+
+
+@pytest.mark.asyncio
+async def test_connect_socket_error():
+    """Test a socket error, like a failing DNS lookup, when connecting."""
+
+    loop = asyncio.get_running_loop()
+    loop.create_datagram_endpoint = MagicMock()
+    loop.create_datagram_endpoint.side_effect = socket.gaierror(
+        socket.EAI_NONAME, "Name or service not known"
+    )
+
+    mock_k1_connector = K1Mock("k1.invalid", "ST_1234567890ab")
+    with pytest.raises(K1.K1ConnectionError, match="Socket error"):
+        await mock_k1_connector.async_connect()
+    assert not mock_k1_connector._lock.locked()
+
+    # A command will try to connect first
+    with pytest.raises(K1.K1ConnectionError, match="Socket error"):
+        await mock_k1_connector.async_process_command(GET_DEVICE_NAMES)
+    assert not mock_k1_connector._lock.locked()
+
+
+@pytest.mark.asyncio
+async def test_process_command_socket_error(mock_k1_connector):
+    """Test a socket error when sending a command."""
+
+    await mock_k1_connector.async_connect()
+    mock_k1_connector._transport.sendto.side_effect = OSError(
+        101, "Network is unreachable"
+    )
+
+    with pytest.raises(K1.K1ConnectionError, match="Network is unreachable"):
+        await mock_k1_connector.async_process_command(GET_DEVICE_NAMES)
+    assert not mock_k1_connector._lock.locked()
+    assert mock_k1_connector.api_key is None
