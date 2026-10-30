@@ -139,6 +139,12 @@ class K1:
                 f"hub {self._remoteaddress[0]} with id {self._k1_id}."
                 f" {exception.args}"
             ) from exception
+        except OSError as exception:
+            # E.g. socket.gaierror when the host name cannot be resolved
+            raise K1.K1ConnectionError(
+                f"Socket error, cannot connect to hub {self._remoteaddress[0]} "
+                f"with id {self._k1_id}: {exception}"
+            ) from exception
         finally:
             self._lock.release()
 
@@ -201,6 +207,17 @@ class K1:
         if not self._session:
             await self.async_connect()
         await self._lock.acquire()
+        try:
+            return await self._async_process_command_locked(attributes, **argv)
+        finally:
+            self._lock.release()
+
+    async def _async_process_command_locked(
+        self,
+        attributes: CommandAttributes,
+        **argv: int | str,
+    ) -> dict[int, dict[str, Any]] | None:
+        """Process a command, the lock must be held by the caller."""
         iteration = 0
         if (
             not self._protocol
@@ -208,7 +225,6 @@ class K1:
             or not self._loop
             or ATTR_KEY not in self._session
         ):
-            self._lock.release()
             raise K1.K1ConnectionError(
                 "Not connected to a K1 hub or incorrect API key."
             )
@@ -265,8 +281,12 @@ class K1:
                 f"hub {self._remoteaddress[0]} with id {self._k1_id}."
                 f" {exception.args}"
             ) from exception
-        finally:
-            self._lock.release()
+        except OSError as exception:
+            self._session = {}
+            raise K1.K1ConnectionError(
+                f"Socket error, cannot communicate with hub {self._remoteaddress[0]} "
+                f"with id {self._k1_id}: {exception}"
+            ) from exception
         return (
             attributes["content_transformer"](contentlist)
             if attributes["content_transformer"] is not None
