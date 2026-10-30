@@ -109,3 +109,7 @@ venv.bak/
 # vscode
 .vscode/*
 .vs/*
+
+# Claude Code memory and plans, linked by script/claude_setup
+.claude/memory/
+.claude/plans/
