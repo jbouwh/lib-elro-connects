@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import datetime
 from json import dumps
 from dataclasses import dataclass
@@ -53,10 +55,23 @@ class ElroConnectsConnector(TypedDict):
 class ElroConnectsSession:
     """Elro Connects Cloud session."""
 
-    def __init__(self) -> None:
-        """Initialize."""
+    def __init__(self, session: aiohttp.ClientSession | None = None) -> None:
+        """Initialize.
+
+        An optional aiohttp client session can be passed, it will not be closed.
+        """
         self._session_cache = None
         self._domain = None
+        self._websession = session
+
+    @asynccontextmanager
+    async def _async_websession(self) -> AsyncIterator[aiohttp.ClientSession]:
+        """Return the passed client session, or a new one that is closed after use."""
+        if self._websession is not None:
+            yield self._websession
+            return
+        async with aiohttp.ClientSession(json_serialize=dumps) as session:
+            yield session
 
     async def async_login(
         self, username: str, password: str
@@ -70,12 +85,14 @@ class ElroConnectsSession:
         }
         headers = {
             "User-Agent": "lib-elro-connects",
+            "Content-Type": "application/json",
         }
         domain = await self._async_get_domain()
-        async with aiohttp.ClientSession(json_serialize=dumps) as session:
+        async with self._async_websession() as session:
+            # Serialize explicitly, a passed session has its own json_serialize
             async with session.post(
                 BASE_UAA_URL + domain + "/login",
-                json=body,
+                data=dumps(body),
                 headers=headers,
             ) as resp:
                 response = await resp.json()
@@ -144,7 +161,7 @@ class ElroConnectsSession:
         }
 
         domain = await self._async_get_domain()
-        async with aiohttp.ClientSession(json_serialize=dumps) as session:
+        async with self._async_websession() as session:
             async with session.get(
                 BASE_USER_URL + domain + "/device",
                 headers=headers,
