@@ -7,7 +7,16 @@ import logging
 import collections
 from typing import Any
 
-from elro.device import DEVICE_VALUE, STATE_NORMAL, DeviceType, DEVICE_STATE
+from elro.device import (
+    ATTR_DEVICE_STATE,
+    ATTR_HUMIDITY,
+    ATTR_TEMPERATURE,
+    DEVICE_VALUE,
+    STATE_NORMAL,
+    STATE_OFFLINE,
+    DeviceType,
+    DEVICE_STATE,
+)
 
 
 # From the ByteUtil class, needed by CRC_maker
@@ -282,6 +291,24 @@ def get_device_states(content: list) -> dict[str, Any]:
             device_state, device_state
         )
 
+    def _temperature_sensor_state(device_status: str) -> dict[str, Any]:
+        """Get the temperature and humidity of a temperature sensor.
+
+        Based on THCheckDetailActivity in the Siterwell app, the status is
+        SSBBTTHH, with the temperature (TT) as a signed byte in degrees Celsius
+        and the relative humidity (HH) in %. Out of range values mean offline.
+        """
+        temperature = int(device_status[4:6], 16)
+        if temperature >= 0x80:
+            temperature -= 0x100
+        humidity = int(device_status[6:8], 16)
+        if not -40 <= temperature <= 100 or humidity > 100:
+            return {ATTR_DEVICE_STATE: STATE_OFFLINE}
+        return {
+            ATTR_DEVICE_STATE: STATE_NORMAL,
+            ATTR_TEMPERATURE: temperature,
+            ATTR_HUMIDITY: humidity,
+        }
 
     return_dict = {}
     for hexdata in content:
@@ -305,6 +332,11 @@ def get_device_states(content: list) -> dict[str, Any]:
             "device_status_data": hexdata,
             "device_value_data": device_value_data,
         }
+        if device_type == DeviceType.TEMPERATURE_SENSOR.name:
+            # The status holds the temperature and humidity, not a device state
+            return_dict[hexdata["device_ID"]].update(
+                _temperature_sensor_state(hexdata["device_status"])
+            )
     return return_dict
 
 
